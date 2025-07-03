@@ -1,15 +1,15 @@
+from decimal import Decimal
 from trytond.model import ModelSQL, fields
 from trytond.modules.company.model import CompanyValueMixin
 from trytond.pool import Pool, PoolMeta
-from trytond.pyson import Bool, Eval
+from trytond.pyson import Bool, Eval, Not
 
 
 # TODO: Add helps
 class Company(metaclass=PoolMeta):
     __name__ = 'company.company'
 
-    aeat_rege = fields.Boolean('Registered in REGE',
-        help='If checked, AEAT REGE is enabled for this company.') # TODO: Redo help
+    aeat_rege = fields.Boolean('Registered in REGE')
 
 
 class Party(metaclass=PoolMeta):
@@ -37,19 +37,29 @@ class PartyRegeGroup(ModelSQL, CompanyValueMixin):
     aeat_rege = fields.Boolean('Registered in REGE')
 
 
-class AccountInvoiceLine(metaclass=PoolMeta):
+class InvoiceLine(metaclass=PoolMeta):
     __name__ = 'account.invoice.line'
 
     cost_price = fields.Numeric('Cost Price', digits='currency',
         states={
-            'invisible': Bool(Eval('company.aeat_rege')) & Bool(Eval('party.aeat_rege')) # Eval('type') == 'out' &
+            'invisible': Not(Bool(Eval('invoice.company.aeat_rege')) & Bool(Eval('party.aeat_rege'))), # Eval('type') == 'out' &
+            #'required': when not invisible
             }) # FIXME: Company?
 
     @property
     def taxable_lines(self):
-        taxable_lines = []
-        for line in self.lines:
-            pass
+        taxable_lines = super().taxable_lines
+
+        if (getattr(self, 'invoice', None)
+                and getattr(self.invoice, 'type', None)):
+            invoice_type = self.invoice.type
+        else:
+            invoice_type = getattr(self, 'invoice_type', None)
+
+        if invoice_type == 'out':
+            cost_price = getattr(self, 'cost_price', None) or Decimal(0)
+            taxable_lines[0][1] -= cost_price
+
         return taxable_lines
 
     @fields.depends('product')

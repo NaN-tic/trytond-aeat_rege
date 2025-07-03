@@ -9,7 +9,7 @@ def register():
         rege.Company,
         rege.Party,
         rege.PartyRegeGroup,
-        rege.AccountInvoiceLine,
+        rege.InvoiceLine,
         module='aeat_rege', type_='model')
     Pool.register(
         module='aeat_rege', type_='wizard')
