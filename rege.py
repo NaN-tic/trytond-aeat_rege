@@ -43,11 +43,11 @@ class InvoiceLine(metaclass=PoolMeta):
 
     cost_price = fields.Numeric('Cost Price', digits='currency',
         states={
-            'invisible': ~Bool('cost_price_visible'),
-            'required': Bool('cost_price_visible'),
+            'invisible': ~Bool(Eval('cost_price_show')),
+            'required': Bool(Eval('cost_price_show')),
             })
-    cost_price_visible = fields.Function(
-        fields.Boolean('Cost Price Visible'), 'on_change_cost_price_visible')
+    cost_price_show = fields.Function(
+        fields.Boolean('Show Cost Price?'), 'on_change_with_cost_price_show')
 
     @property
     def taxable_lines(self):
@@ -61,19 +61,17 @@ class InvoiceLine(metaclass=PoolMeta):
         if invoice_type == 'out':
             cost_price = getattr(self, 'cost_price', None) or Decimal(0)
             taxable_lines[0][1] -= cost_price
-
         return taxable_lines
 
     @fields.depends('invoice', '_parent_invoice.type', '_parent_invoice.company', 'party', '_parent_party.aeat_rege')
-    def on_change_cost_price_visible(self, name=None):
-        visible = True
+    def on_change_with_cost_price_show(self, name=None):
         if not (self.invoice and self.invoice.type == 'out'):
-            visible = False
+            return False
         elif not (self.invoice.company and self.invoice.company.aeat_rege):
-            visible = False
+            return False
         elif not (self.party and self.party.aeat_rege):
-            visible = False
-        self.cost_price_visible = visible
+            return False
+        return True
 
     @fields.depends('product')
     def on_change_product(self):
