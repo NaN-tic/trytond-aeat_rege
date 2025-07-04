@@ -1,35 +1,36 @@
 from decimal import Decimal
-from trytond.model import ModelSQL, fields
+from trytond.model import ModelSQL, fields, MultiValueMixin
 from trytond.modules.company.model import CompanyValueMixin
 from trytond.pool import Pool, PoolMeta
-from trytond.pyson import Bool, Eval, Not
+from trytond.pyson import Bool, Eval
 
 
 # TODO: Add helps
+# TODO: What happens if a Party is on a Company that has REGE enabled, but the Party itself is not registered in REGE?
 class Company(metaclass=PoolMeta):
     __name__ = 'company.company'
 
     aeat_rege = fields.Boolean('Registered in REGE')
 
 
-class Party(metaclass=PoolMeta):
+class Party(MultiValueMixin, metaclass=PoolMeta):
     __name__ = 'party.party'
 
     aeat_rege = fields.MultiValue(fields.Boolean('Registered in REGE'))
-    aeat_rege_group = fields.One2Many(
-        'party.party.rege_group', 'party', 'REGE Group')
+    aeat_reges = fields.One2Many(
+        'party.party.rege', 'party', 'AEAT REGEs')
 
     @classmethod
     def multivalue_model(cls, field):
         pool = Pool()
         if field in {'aeat_rege'}:
-            return pool.get('party.party.rege_group')
+            return pool.get('party.party.rege')
         return super().multivalue_model(field)
 
 
-class PartyRegeGroup(ModelSQL, CompanyValueMixin):
-    'Party REGE Group'
-    __name__ = 'party.party.rege_group'
+class PartyRege(ModelSQL, CompanyValueMixin):
+    'Party-Company REGE Relation'
+    __name__ = 'party.party.rege'
 
     party = fields.Many2One('party.party', 'Party', ondelete='CASCADE',
         context={ 'company': Eval('company', -1) },
@@ -42,18 +43,19 @@ class InvoiceLine(metaclass=PoolMeta):
 
     cost_price = fields.Numeric('Cost Price', digits='currency',
         states={
-            'invisible': Not(Bool(Eval('invoice.company.aeat_rege')) & Bool(Eval('party.aeat_rege'))), # Eval('type') == 'out' &
-            #'required': when not invisible
-            }) # FIXME: Company?
+            'invisible': ~Bool('cost_price_visible'),
+            'required': Bool('cost_price_visible'),
+            })
+    cost_price_visible = fields.Function(
+        fields.Boolean('Cost Price Visible'), 'on_change_cost_price_visible')
 
     @property
     def taxable_lines(self):
         taxable_lines = super().taxable_lines
 
-        if (getattr(self, 'invoice', None)
-                and getattr(self.invoice, 'type', None)):
+        if (hasattr(self, 'invoice') and hasattr(self.invoice, 'type')):
             invoice_type = self.invoice.type
-        else:
+        if not invoice_type:
             invoice_type = getattr(self, 'invoice_type', None)
 
         if invoice_type == 'out':
@@ -62,8 +64,18 @@ class InvoiceLine(metaclass=PoolMeta):
 
         return taxable_lines
 
+    @fields.depends('invoice', '_parent_invoice.type', '_parent_invoice.company', 'party', '_parent_party.aeat_rege')
+    def on_change_cost_price_visible(self, name=None):
+        visible = True
+        if not (self.invoice and self.invoice.type == 'out'):
+            visible = False
+        elif not (self.invoice.company and self.invoice.company.aeat_rege):
+            visible = False
+        elif not (self.party and self.party.aeat_rege):
+            visible = False
+        self.cost_price_visible = visible
+
     @fields.depends('product')
-    def on_change_with_product(self):
-        if not self.product: # or self.cost_price: FIXME:
-            return
-        return self.product.cost_price
+    def on_change_product(self):
+        if self.product and self.product.cost_price:
+            self.cost_price = self.product.cost_price

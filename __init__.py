@@ -8,7 +8,7 @@ def register():
     Pool.register(
         rege.Company,
         rege.Party,
-        rege.PartyRegeGroup,
+        rege.PartyRege,
         rege.InvoiceLine,
         module='aeat_rege', type_='model')
     Pool.register(
