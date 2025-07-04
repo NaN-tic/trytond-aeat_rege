@@ -2,8 +2,7 @@
 <!-- This file is part of Tryton.  The COPYRIGHT file at the top level of
 this repository contains the full copyright notices and license terms. -->
 <data>
-    <xpath expr="/form/group[@id='header']/group[@id='checkboxes']" position="inside">
-        <label name="aeat_rege"/>
-        <field name="aeat_rege"/>
+    <xpath expr="/tree/field[@name='lang']" position="after">
+        <field name="aeat_rege" optional="1"/>
     </xpath>
 </data>
