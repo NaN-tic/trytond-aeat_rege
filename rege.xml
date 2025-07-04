@@ -10,6 +10,11 @@ this repository contains the full copyright notices and license terms. -->
             <field name="inherit" ref="company.company_view_form"/>
             <field name="name">company_form</field>
         </record>
+        <record model="ir.ui.view" id="company_view_list">
+            <field name="model">company.company</field>
+            <field name="inherit" ref="company.company_view_list"/>
+            <field name="name">company_list</field>
+        </record>
 
         <!-- party.party -->
             <!-- Views -->
