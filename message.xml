@@ -9,5 +9,8 @@ this repository contains the full copyright notices and license terms. -->
         <record model="ir.message" id="msg_unique_date_interval">
             <field name="text">It is not allowed to have more than one 'open' period for the same REGE.</field>
         </record>
+        <record model="ir.message" id="msg_active_membership">
+            <field name="text">There can only be one active membership for a REGE.</field>
+        </record>
     </data>
 </tryton>

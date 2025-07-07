@@ -1,0 +1,13 @@
+<form col="6">
+    <label name="current_member"/>
+    <field name="current_member"/>
+    <label name="rege"/>
+    <field name="rege" colspan="2"/>
+    <label name="party"/>
+    <field name="party" coslpan="3"/>
+    <newline/>
+    <label name="registration_date"/>
+    <field name="registration_date"/>
+    <label name="exit_date"/>
+    <field name="exit_date"/>
+</form>

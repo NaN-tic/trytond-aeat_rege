@@ -84,5 +84,28 @@ this repository contains the full copyright notices and license terms. -->
 
             <!-- Menus -->
         <menuitem id="menu_aeat_rege_period" parent="menu_aeat_rege" sequence="1" icon="tryton-list" action="act_aeat_rege_period" />
+
+        <!-- aeat.rege.member -->
+            <!-- Access -->
+        <record model="ir.model.access" id="access_aeat_rege_member">
+            <field name="model">aeat.rege.member</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_delete" eval="True"/>
+        </record>
+
+            <!-- Views -->
+        <record model="ir.ui.view" id="view_aeat_rege_member_form">
+            <field name="model">aeat.rege.member</field>
+            <field name="type">form</field>
+            <field name="name">rege_member_form</field>
+        </record>
+        <record model="ir.ui.view" id="view_aeat_rege_member_list">
+            <field name="model">aeat.rege.member</field>
+            <field name="type">tree</field>
+            <field name="name">rege_member_list</field>
+        </record>
+
     </data>
 </tryton>

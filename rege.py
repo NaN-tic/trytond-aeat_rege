@@ -19,7 +19,7 @@ class REGE(ModelView, ModelSQL):
         required=True, translate=True)
     periods = fields.One2Many('aeat.rege.period', 'rege', 'Periods',
         required=True)
-    # registrations = fields.One2Many('aeat.rege.registration', 'rege', 'Registrations')
+    members = fields.One2Many('aeat.rege.member', 'rege', 'Members')
     type = fields.Function(
         fields.Selection([
             (None, ''),
@@ -94,16 +94,47 @@ class REGEPeriod(ModelView, ModelSQL):
             return 'open'
         return 'closed'
 
+# TODO: Do not allow to delete a membership. Only deactivate it¿?
+class REGEMember(ModelView, ModelSQL):
+    'Party membership on AEAT REGE'
+    __name__ = 'aeat.rege.member'
 
-class REGERegistration(ModelView, ModelSQL):
-    'Party registered on AEAT REGE'
-    __name__ = 'aeat.rege.registration'
-
-    rege = fields.Many2One('aeat.rege', 'REGE', required=True, ondelete='CASCADE')
-    party = fields.Many2One('party.party', 'Party', required=True, ondelete='CASCADE')
-    registration_date = fields.Date('Registration Date')
+    rege = fields.Many2One('aeat.rege', 'REGE',
+        required=True, ondelete='CASCADE')
+    party = fields.Many2One('party.party', 'Party',
+        required=True, ondelete='CASCADE')
+    registration_date = fields.Date('Registration Date',
+        required=True)
     exit_date = fields.Date('Exit Date')
+    current_member = fields.Function(
+        fields.Boolean('Current Member'),
+        'get_current_member')
 
+    @staticmethod
+    def default_registration_date():
+        pool = Pool()
+        Date = pool.get('ir.date')
+        return Date.today()
+
+    @classmethod
+    def validate(cls, records):
+        super().validate(records)
+        for record in records:
+            members = cls.search([
+                ('id', '!=', record.id),
+                ('party', '=', record.party.id),
+                ('rege', '=', record.rege.id),
+            ])
+            for member in members:
+                if record.current_member and member.current_member:
+                    raise UserError(gettext('aeat_rege.msg_active_membership'))  # TODO: Put the records affected
+
+    def get_current_member(self, name):
+        pool = Pool()
+        Date = pool.get('ir.date')
+
+        today = Date.today()
+        return not (self.exit_date and self.exit_date >= today)
 
 class Party(metaclass=PoolMeta):
     __name__ = 'party.party'

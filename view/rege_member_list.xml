@@ -1,0 +1,7 @@
+<tree>
+    <field name="current_member"/>
+    <field name="rege"/>
+    <field name="party"/>
+    <field name="registration_date"/>
+    <field name="exit_date"/>
+</tree>

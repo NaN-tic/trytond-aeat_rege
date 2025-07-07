@@ -3,6 +3,6 @@
     <field name="name" coslpan="4"/>
     <label name="type"/>
     <field name="type"/>
-    <newline/>
     <field name="periods" colspan="6"/>
+    <field name="members" colspan="6"/>
 </form>
