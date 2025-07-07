@@ -1,0 +1,14 @@
+<form col="6">
+    <label name="rege"/>
+    <field name="rege" coslpan="6"/>
+    <newline/>
+    <label name="type"/>
+    <field name="type"/>
+    <label name="state"/>
+    <field name="state"/>
+    <newline/>
+    <label name="start_date"/>
+    <field name="start_date"/>
+    <label name="end_date"/>
+    <field name="end_date"/>
+</form>

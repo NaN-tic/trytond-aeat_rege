@@ -3,39 +3,86 @@
 this repository contains the full copyright notices and license terms. -->
 <tryton>
     <data>
-        <!-- company.company -->
-            <!-- Views -->
-        <record model="ir.ui.view" id="company_view_form">
-            <field name="model">company.company</field>
-            <field name="inherit" ref="company.company_view_form"/>
-            <field name="name">company_form</field>
-        </record>
-        <record model="ir.ui.view" id="company_view_list">
-            <field name="model">company.company</field>
-            <field name="inherit" ref="company.company_view_list"/>
-            <field name="name">company_list</field>
+        <!-- aeat.rege -->
+            <!-- Access -->
+        <record model="ir.model.access" id="access_aeat_rege">
+            <field name="model">aeat.rege</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_delete" eval="True"/>
         </record>
 
-        <!-- party.party -->
             <!-- Views -->
-        <record model="ir.ui.view" id="party_view_form">
-            <field name="model">party.party</field>
-            <field name="inherit" ref="party.party_view_form"/>
-            <field name="name">party_form</field>
+        <record model="ir.ui.view" id="view_aeat_rege_form">
+            <field name="model">aeat.rege</field>
+            <field name="type">form</field>
+            <field name="name">rege_form</field>
         </record>
-        <record model="ir.ui.view" id="party_view_tree">
-            <field name="model">party.party</field>
-            <field name="inherit" ref="party.party_view_tree"/>
-            <field name="name">party_list</field>
+        <record model="ir.ui.view" id="view_aeat_rege_list">
+            <field name="model">aeat.rege</field>
+            <field name="type">tree</field>
+            <field name="name">rege_list</field>
         </record>
 
-        <!-- account.invoice.line -->
-            <!-- Views -->
-        <record model="ir.ui.view" id="invoice_line_view_form">
-            <field name="model">account.invoice.line</field>
-            <field name="inherit" ref="account_invoice.invoice_line_view_form"/>
-            <field name="name">invoice_line_form</field>
+            <!-- Actions -->
+        <record model="ir.action.act_window" id="act_aeat_rege">
+            <field name="name">Special Regime for Groups of Entities</field>
+            <field name="res_model">aeat.rege</field>
+        </record>
+        <record model="ir.action.act_window.view" id="act_aeat_rege_form">
+            <field name="sequence" eval="20"/>
+            <field name="view" ref="view_aeat_rege_form"/>
+            <field name="act_window" ref="act_aeat_rege" />
+        </record>
+        <record model="ir.action.act_window.view" id="act_aeat_rege_tree">
+            <field name="sequence" eval="10"/>
+            <field name="view" ref="view_aeat_rege_list"/>
+            <field name="act_window" ref="act_aeat_rege" />
         </record>
 
+            <!-- Menus -->
+        <menuitem id="menu_aeat_rege" parent="ir.menu_administration" sequence="1" icon="tryton-list" action="act_aeat_rege" />
+
+        <!-- aeat.rege.period -->
+            <!-- Access -->
+        <record model="ir.model.access" id="access_aeat_rege_period">
+            <field name="model">aeat.rege.period</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_delete" eval="True"/>
+        </record>
+
+            <!-- Views -->
+        <record model="ir.ui.view" id="view_aeat_rege_period_form">
+            <field name="model">aeat.rege.period</field>
+            <field name="type">form</field>
+            <field name="name">rege_period_form</field>
+        </record>
+        <record model="ir.ui.view" id="view_aeat_rege_period_list">
+            <field name="model">aeat.rege.period</field>
+            <field name="type">tree</field>
+            <field name="name">rege_period_list</field>
+        </record>
+
+            <!-- Actions -->
+        <record model="ir.action.act_window" id="act_aeat_rege_period">
+            <field name="name">Period of REGE</field>
+            <field name="res_model">aeat.rege.period</field>
+        </record>
+        <record model="ir.action.act_window.view" id="act_aeat_rege_period_form">
+            <field name="sequence" eval="20"/>
+            <field name="view" ref="view_aeat_rege_period_form"/>
+            <field name="act_window" ref="act_aeat_rege_period" />
+        </record>
+        <record model="ir.action.act_window.view" id="act_aeat_rege_period_tree">
+            <field name="sequence" eval="10"/>
+            <field name="view" ref="view_aeat_rege_period_list"/>
+            <field name="act_window" ref="act_aeat_rege_period" />
+        </record>
+
+            <!-- Menus -->
+        <menuitem id="menu_aeat_rege_period" parent="menu_aeat_rege" sequence="1" icon="tryton-list" action="act_aeat_rege_period" />
     </data>
 </tryton>

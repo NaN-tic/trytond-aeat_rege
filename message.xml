@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<!-- This file is part of Tryton.  The COPYRIGHT file at the top level of
+this repository contains the full copyright notices and license terms. -->
+<tryton>
+    <data grouped="1">
+        <record model="ir.message" id="msg_date_interval">
+            <field name="text">The start date must be earlier than the end date.</field>
+        </record>
+        <record model="ir.message" id="msg_unique_date_interval">
+            <field name="text">It is not allowed to have more than one 'open' period for the same REGE.</field>
+        </record>
+    </data>
+</tryton>

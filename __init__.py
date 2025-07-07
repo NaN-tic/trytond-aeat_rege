@@ -6,10 +6,8 @@ from . import rege
 
 def register():
     Pool.register(
-        rege.Company,
-        rege.Party,
-        rege.PartyRege,
-        rege.InvoiceLine,
+        rege.REGE,
+        rege.REGEPeriod,
         module='aeat_rege', type_='model')
     Pool.register(
         module='aeat_rege', type_='wizard')

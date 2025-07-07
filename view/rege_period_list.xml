@@ -1,0 +1,7 @@
+<tree col="6">
+    <field name="rege"/>
+    <field name="type"/>
+    <field name="state"/>
+    <field name="start_date"/>
+    <field name="end_date"/>
+</tree>
