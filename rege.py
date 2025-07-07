@@ -134,7 +134,7 @@ class REGEMember(ModelView, ModelSQL):
         Date = pool.get('ir.date')
 
         today = Date.today()
-        return not (self.exit_date and self.exit_date >= today)
+        return not (self.exit_date and self.exit_date <= today)
 
 class Party(metaclass=PoolMeta):
     __name__ = 'party.party'
