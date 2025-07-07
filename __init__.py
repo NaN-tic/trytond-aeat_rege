@@ -9,6 +9,7 @@ def register():
         rege.REGE,
         rege.REGEPeriod,
         rege.REGEMember,
+        rege.Party,
         module='aeat_rege', type_='model')
     Pool.register(
         module='aeat_rege', type_='wizard')

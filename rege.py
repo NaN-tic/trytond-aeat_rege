@@ -106,7 +106,7 @@ class REGEMember(ModelView, ModelSQL):
     registration_date = fields.Date('Registration Date',
         required=True)
     exit_date = fields.Date('Exit Date')
-    current_member = fields.Function(
+    current_member = fields.Function( # TODO: Replace with 'active' field?
         fields.Boolean('Current Member'),
         'get_current_member')
 
@@ -136,10 +136,11 @@ class REGEMember(ModelView, ModelSQL):
         today = Date.today()
         return not (self.exit_date and self.exit_date <= today)
 
+
 class Party(metaclass=PoolMeta):
     __name__ = 'party.party'
 
-    reges = fields.One2Many('aeat.rege.registration', 'party', 'REGEs')
+    reges = fields.One2Many('aeat.rege.member', 'party', 'REGE Memberships')
 
 
 # TODO: Add helps
