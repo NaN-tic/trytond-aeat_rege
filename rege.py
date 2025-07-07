@@ -37,7 +37,6 @@ class REGE(ModelView, ModelSQL):
         return 'normal'
 
 
-# TODO: If 'start_date' is none, it should interpret as the beginning of time. Same for 'end_date', but as the end of time.
 class REGEPeriod(ModelView, ModelSQL):
     'AEAT REGE Period'
     __name__ = 'aeat.rege.period'
@@ -74,14 +73,14 @@ class REGEPeriod(ModelView, ModelSQL):
     def validate(cls, records):
         super().validate(records)
         for record in records:
-            periods = cls.search([
+            periods = cls.search([ # FIXME: Try to use record.rege.periods (use timeit or something like that)
                 ('id', '!=', record.id),
                 ('rege', '=', record.rege.id),
             ])
 
             for period in periods:
                 if record.state == 'open' and period.state == record.state:
-                    raise UserError(gettext('aeat_rege.msg_unique_date_interval'))
+                    raise UserError(gettext('aeat_rege.msg_unique_date_interval')) # TODO: Put the records affected
 
     def get_state(self, name):
         pool = Pool()
