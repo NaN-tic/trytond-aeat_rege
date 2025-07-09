@@ -265,12 +265,14 @@ class Party(metaclass=PoolMeta):
     __name__ = 'party.party'
 
     reges = fields.One2Many('aeat.rege.member', 'party', 'REGE Memberships')
-    x = fields.Function(
-        fields.Boolean('X'),
-        'on_change_with_x')
+    shares_rege = fields.Function(
+        fields.Boolean('Shares REGE with current Company',
+            help=('Indicates if this party and the current company '
+                'share membership in the same AEAT REGE.')),
+        'on_change_with_shares_rege')
 
     @fields.depends('reges')
-    def on_change_with_x(self, name=None):
+    def on_change_with_shares_rege(self, name=None):
         pool = Pool()
         Company = pool.get('company.company')
 
