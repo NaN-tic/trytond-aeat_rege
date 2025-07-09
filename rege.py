@@ -341,5 +341,6 @@ class InvoiceLine(metaclass=PoolMeta):
 
         for member in self.party.reges:
             if member.current_member and member.rege.id in company_reges:
-                return True
+                if member.rege.is_active and member.rege.type == 'advanced':
+                    return True
         return False
