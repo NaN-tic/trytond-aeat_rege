@@ -309,6 +309,10 @@ class InvoiceLine(metaclass=PoolMeta):
         fields.Boolean('Show Cost Price?'),
         'on_change_with_cost_price_show')
 
+    @staticmethod
+    def default_cost_price():
+        return Decimal(0)
+
     @property
     def taxable_lines(self):
         taxable_lines = super().taxable_lines
