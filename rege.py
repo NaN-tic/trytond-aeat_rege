@@ -331,19 +331,20 @@ class InvoiceLine(metaclass=PoolMeta):
             return self.product.cost_price
 
     @fields.depends('invoice', '_parent_invoice.type',
-        '_parent_invoice.company', 'party', '_parent_party.reges')
+        '_parent_invoice.company', '_parent_invoice.party')
     def on_change_with_cost_price_show(self, name=None):
-        if not (self.invoice and self.invoice.type == 'out'):
+        if not (self.invoice and self.invoice.party and self.invoice.company
+                and self.invoice.type == 'out'):
             return False
 
         company_reges = {
             member.rege.id
             for member in self.invoice.company.party.reges
             if member.rege and member.current_member}
-        if not company_reges or not self.party.reges:
+        if not company_reges or not self.invoice.party.reges:
             return False
 
-        for member in self.party.reges:
+        for member in self.invoice.party.reges:
             if member.current_member and member.rege.id in company_reges:
                 if member.rege.is_active and member.rege.type == 'advanced':
                     return True
