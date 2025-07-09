@@ -306,7 +306,8 @@ class InvoiceLine(metaclass=PoolMeta):
             'required': Bool(Eval('cost_price_show')),
             })
     cost_price_show = fields.Function(
-        fields.Boolean('Show Cost Price?'), 'on_change_with_cost_price_show')
+        fields.Boolean('Show Cost Price?'),
+        'on_change_with_cost_price_show')
 
     @property
     def taxable_lines(self):
@@ -325,7 +326,8 @@ class InvoiceLine(metaclass=PoolMeta):
         if self.product and self.product.cost_price:
             return self.product.cost_price
 
-    @fields.depends('invoice', '_parent_invoice.type', '_parent_invoice.company', 'party', '_parent_party.reges')
+    @fields.depends('invoice', '_parent_invoice.type',
+        '_parent_invoice.company', 'party', '_parent_party.reges')
     def on_change_with_cost_price_show(self, name=None):
         if not (self.invoice and self.invoice.type == 'out'):
             return False
