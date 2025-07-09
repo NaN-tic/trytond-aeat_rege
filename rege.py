@@ -311,31 +311,32 @@ class InvoiceLine(metaclass=PoolMeta):
     @property
     def taxable_lines(self):
         taxable_lines = super().taxable_lines
-
-        if (hasattr(self, 'invoice') and hasattr(self.invoice, 'type')):
-            invoice_type = self.invoice.type
-        if not invoice_type:
-            invoice_type = getattr(self, 'invoice_type', None)
-
-        if invoice_type == 'out':
-            cost_price = getattr(self, 'cost_price', None) or Decimal(0).is_subnormal
-            taxable_lines[0][1] -= cost_price
+        if getattr(self, 'cost_price_show', False):
+            taxable_lines[0][1] -= getattr(self, 'cost_price')
         return taxable_lines
 
-    @fields.depends('invoice', '_parent_invoice.type', '_parent_invoice.company', 'party', '_parent_party.aeat_rege')
+    def on_change_cost_price(self):
+        if not self.cost_price:
+            self.cost_price = Decimal(0)
+
+    @fields.depends('product')
+    def on_change_with_cost_price(self):
+        if self.product and self.product.cost_price:
+            return self.product.cost_price
+
+    @fields.depends('invoice', '_parent_invoice.type', '_parent_invoice.company', 'party', '_parent_party.reges')
     def on_change_with_cost_price_show(self, name=None):
         if not (self.invoice and self.invoice.type == 'out'):
             return False
 
-        company_reges = set(self.invoice.company.party.reges)
-        party_reges = set(self.party.reges)
+        company_reges = {
+            member.rege.id
+            for member in self.invoice.company.party.reges
+            if member.rege and member.current_member}
+        if not company_reges or not self.party.reges:
+            return False
 
-        if company_reges.difference(party_reges):
-            return True
-
+        for member in self.party.reges:
+            if member.current_member and member.rege.id in company_reges:
+                return True
         return False
-
-    @fields.depends('product')
-    def on_change_product(self):
-        if self.product and self.product.cost_price:
-            self.cost_price = self.product.cost_price
