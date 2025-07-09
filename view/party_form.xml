@@ -5,4 +5,9 @@
             <field name="reges"/>
         </page>
     </xpath>
+
+    <xpath expr="/form/group[@id='header']/group[@id='checkboxes']" position="inside">
+        <label name="x"/>
+        <field name="x"/>
+    </xpath>
 </data>

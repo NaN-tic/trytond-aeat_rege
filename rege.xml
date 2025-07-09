@@ -45,15 +45,6 @@ this repository contains the full copyright notices and license terms. -->
         <menuitem id="menu_aeat_rege" parent="ir.menu_administration" sequence="1" icon="tryton-list" action="act_aeat_rege" />
 
         <!-- aeat.rege.period -->
-            <!-- Access -->
-        <record model="ir.model.access" id="access_aeat_rege_period">
-            <field name="model">aeat.rege.period</field>
-            <field name="perm_read" eval="True"/>
-            <field name="perm_write" eval="True"/>
-            <field name="perm_create" eval="True"/>
-            <field name="perm_delete" eval="True"/>
-        </record>
-
             <!-- Views -->
         <record model="ir.ui.view" id="view_aeat_rege_period_form">
             <field name="model">aeat.rege.period</field>
@@ -68,7 +59,7 @@ this repository contains the full copyright notices and license terms. -->
 
             <!-- Actions -->
         <record model="ir.action.act_window" id="act_aeat_rege_period">
-            <field name="name">Period of REGE</field>
+            <field name="name">Periods</field>
             <field name="res_model">aeat.rege.period</field>
         </record>
         <record model="ir.action.act_window.view" id="act_aeat_rege_period_form">
@@ -114,5 +105,44 @@ this repository contains the full copyright notices and license terms. -->
             <field name="name">party_form</field>
         </record>
 
+        <!-- aeat.rege -->
+            <!-- Related Records -->
+                <!-- Members -->
+        <record model="ir.action.act_window" id="act_aeat_rege_members_related">
+            <field name="name">REGE Members</field>
+            <field name="res_model">aeat.rege.member</field>
+            <field name="domain" eval="[('rege', 'in', Eval('active_ids'))]" pyson="1"/>
+        </record>
+
+        <record model="ir.action.act_window.domain" id="act_aeat_rege_members_related_active">
+            <field name="name">Active</field>
+            <field name="sequence" eval="10"/>
+            <field name="domain" eval="[('current_member', '=', True)]" pyson="1"/>
+            <field name="count" eval="True"/>
+            <field name="act_window" ref="act_aeat_rege_members_related"/>
+        </record>
+        <record model="ir.action.act_window.domain" id="act_aeat_rege_members_related_all">
+            <field name="name">All</field>
+            <field name="sequence" eval="9999"/>
+            <field name="domain" eval="[]" pyson="1"/>
+            <field name="count" eval="False"/>
+            <field name="act_window" ref="act_aeat_rege_members_related"/>
+        </record>
+
+        <record model="ir.action.act_window.view" id="act_aeat_rege_members_related_view_tree">
+            <field name="sequence" eval="10"/>
+            <field name="view" ref="view_aeat_rege_member_list"/>
+            <field name="act_window" ref="act_aeat_rege_members_related"/>
+        </record>
+        <record model="ir.action.act_window.view" id="act_aeat_rege_members_related_view_form">
+            <field name="sequence" eval="20"/>
+            <field name="view" ref="view_aeat_rege_member_form"/>
+            <field name="act_window" ref="act_aeat_rege_members_related"/>
+        </record>
+        <record model="ir.action.keyword" id="act_aeat_rege_members_related_keyword">
+            <field name="keyword">form_relate</field>
+            <field name="model">aeat.rege,-1</field>
+            <field name="action" ref="act_aeat_rege_members_related"/>
+        </record>
     </data>
 </tryton>

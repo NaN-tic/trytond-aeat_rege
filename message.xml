@@ -3,14 +3,17 @@
 this repository contains the full copyright notices and license terms. -->
 <tryton>
     <data grouped="1">
-        <record model="ir.message" id="msg_date_interval">
-            <field name="text">The start date must be earlier than the end date.</field>
+        <record model="ir.message" id="msg_date_interval_period">
+            <field name="text">The "Start Date" must be earlier than the "End Date".</field>
         </record>
-        <record model="ir.message" id="msg_unique_date_interval">
-            <field name="text">It is not allowed to have more than one 'open' period for the same REGE.</field>
+        <record model="ir.message" id="msg_date_interval_registration">
+            <field name="text">The "Registration Date" must be earlier than the "Exit Date".</field>
+        </record>
+        <record model="ir.message" id="msg_period_overlap">
+            <field name="text">The period "%(main)s" overlaps with the following period(s): %(period)s. Please adjust the date ranges to avoid overlap.</field>
         </record>
         <record model="ir.message" id="msg_active_membership">
-            <field name="text">There can only be one active membership for a REGE.</field>
+            <field name="text">The party "%(party)s" is already enrolled in REGE "%(rege)s".</field>
         </record>
     </data>
 </tryton>

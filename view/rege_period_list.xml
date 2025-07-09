@@ -1,7 +1,7 @@
 <tree>
-    <field name="rege"/>
-    <field name="type"/>
-    <field name="state"/>
+    <field name="rege" expand="2"/>
+    <field name="type" expand="2"/>
     <field name="start_date"/>
     <field name="end_date"/>
+    <field name="state"/>
 </tree>

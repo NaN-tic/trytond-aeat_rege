@@ -1,8 +1,18 @@
-<form col="6">
+<form>
     <label name="name"/>
-    <field name="name" coslpan="4"/>
-    <label name="type"/>
-    <field name="type"/>
-    <field name="periods" colspan="6"/>
-    <field name="members" colspan="6"/>
+    <field name="name"/>
+    <group id="metadata" col="-1" xexpand="0">
+        <label name="is_active"/>
+        <field name="is_active" xexpand="0"/>
+        <label name="type"/>
+        <field name="type" xexpand="0"/>
+    </group>
+    <notebook>
+        <page id="periods-info" string="Periods">
+            <field name="periods" height="500"/>
+        </page>
+        <page id="members-info" string="Members">
+            <field name="members" height="500"/>
+        </page>
+    </notebook>
 </form>

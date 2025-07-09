@@ -1,12 +1,10 @@
-<form col="6">
+<form col="4">
     <label name="rege"/>
-    <field name="rege" coslpan="6"/>
-    <newline/>
+    <field name="rege" colspan="3"/>
     <label name="type"/>
     <field name="type"/>
     <label name="state"/>
     <field name="state"/>
-    <newline/>
     <label name="start_date"/>
     <field name="start_date"/>
     <label name="end_date"/>
