@@ -315,11 +315,12 @@ class InvoiceLine(metaclass=PoolMeta):
             taxable_lines[0][1] -= getattr(self, 'cost_price')
         return taxable_lines
 
+    @fields.depends('cost_price')
     def on_change_cost_price(self):
         if not self.cost_price:
             self.cost_price = Decimal(0)
 
-    @fields.depends('product')
+    @fields.depends('product', '_parent_product.cost_price')
     def on_change_with_cost_price(self):
         if self.product and self.product.cost_price:
             return self.product.cost_price
