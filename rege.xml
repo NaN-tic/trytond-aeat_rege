@@ -4,9 +4,17 @@ this repository contains the full copyright notices and license terms. -->
 <tryton>
     <data>
         <!-- aeat.rege -->
-            <!-- TODO: Access -->
+            <!-- Access -->
         <record model="ir.model.access" id="access_aeat_rege">
             <field name="model">aeat.rege</field>
+            <field name="perm_read" eval="False"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_delete" eval="False"/>
+        </record>
+        <record model="ir.model.access" id="access_aeat_rege_group_company_admin">
+            <field name="model">aeat.rege</field>
+            <field name="group" ref="company.group_company_admin"/>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -42,7 +50,7 @@ this repository contains the full copyright notices and license terms. -->
         </record>
 
             <!-- Menus -->
-        <menuitem id="menu_aeat_rege" parent="company.menu_company" sequence="1" icon="tryton-list" action="act_aeat_rege" />
+        <menuitem id="menu_aeat_rege" parent="company.menu_company" sequence="30" icon="tryton-list" action="act_aeat_rege" />
 
         <!-- aeat.rege.period -->
             <!-- Views -->
@@ -59,7 +67,7 @@ this repository contains the full copyright notices and license terms. -->
 
             <!-- Actions -->
         <record model="ir.action.act_window" id="act_aeat_rege_period">
-            <field name="name">Periods</field>
+            <field name="name">REGE Periods</field>
             <field name="res_model">aeat.rege.period</field>
         </record>
         <record model="ir.action.act_window.view" id="act_aeat_rege_period_form">
@@ -74,7 +82,7 @@ this repository contains the full copyright notices and license terms. -->
         </record>
 
             <!-- Menus -->
-        <menuitem id="menu_aeat_rege_period" parent="menu_aeat_rege" sequence="1" icon="tryton-list" action="act_aeat_rege_period" />
+        <menuitem id="menu_aeat_rege_period" parent="menu_aeat_rege" sequence="10" icon="tryton-list" action="act_aeat_rege_period" />
 
         <!-- aeat.rege.member -->
             <!-- Views -->
@@ -110,21 +118,6 @@ this repository contains the full copyright notices and license terms. -->
             <field name="name">REGE Members</field>
             <field name="res_model">aeat.rege.member</field>
             <field name="domain" eval="[('rege', 'in', Eval('active_ids'))]" pyson="1"/>
-        </record>
-
-        <record model="ir.action.act_window.domain" id="act_aeat_rege_members_related_active">
-            <field name="name">Active</field>
-            <field name="sequence" eval="10"/>
-            <field name="domain" eval="[('active', '=', True)]" pyson="1"/>
-            <field name="count" eval="True"/>
-            <field name="act_window" ref="act_aeat_rege_members_related"/>
-        </record>
-        <record model="ir.action.act_window.domain" id="act_aeat_rege_members_related_all">
-            <field name="name">All</field>
-            <field name="sequence" eval="9999"/>
-            <field name="domain" eval="[]" pyson="1"/>
-            <field name="count" eval="False"/>
-            <field name="act_window" ref="act_aeat_rege_members_related"/>
         </record>
 
         <record model="ir.action.act_window.view" id="act_aeat_rege_members_related_view_tree">
