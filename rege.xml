@@ -4,7 +4,7 @@ this repository contains the full copyright notices and license terms. -->
 <tryton>
     <data>
         <!-- aeat.rege -->
-            <!-- Access -->
+            <!-- TODO: Access -->
         <record model="ir.model.access" id="access_aeat_rege">
             <field name="model">aeat.rege</field>
             <field name="perm_read" eval="True"/>
@@ -42,7 +42,7 @@ this repository contains the full copyright notices and license terms. -->
         </record>
 
             <!-- Menus -->
-        <menuitem id="menu_aeat_rege" parent="ir.menu_administration" sequence="1" icon="tryton-list" action="act_aeat_rege" />
+        <menuitem id="menu_aeat_rege" parent="company.menu_company" sequence="1" icon="tryton-list" action="act_aeat_rege" />
 
         <!-- aeat.rege.period -->
             <!-- Views -->
@@ -77,15 +77,6 @@ this repository contains the full copyright notices and license terms. -->
         <menuitem id="menu_aeat_rege_period" parent="menu_aeat_rege" sequence="1" icon="tryton-list" action="act_aeat_rege_period" />
 
         <!-- aeat.rege.member -->
-            <!-- Access -->
-        <record model="ir.model.access" id="access_aeat_rege_member">
-            <field name="model">aeat.rege.member</field>
-            <field name="perm_read" eval="True"/>
-            <field name="perm_write" eval="True"/>
-            <field name="perm_create" eval="True"/>
-            <field name="perm_delete" eval="True"/>
-        </record>
-
             <!-- Views -->
         <record model="ir.ui.view" id="view_aeat_rege_member_form">
             <field name="model">aeat.rege.member</field>
@@ -124,7 +115,7 @@ this repository contains the full copyright notices and license terms. -->
         <record model="ir.action.act_window.domain" id="act_aeat_rege_members_related_active">
             <field name="name">Active</field>
             <field name="sequence" eval="10"/>
-            <field name="domain" eval="[('current_member', '=', True)]" pyson="1"/>
+            <field name="domain" eval="[('active', '=', True)]" pyson="1"/>
             <field name="count" eval="True"/>
             <field name="act_window" ref="act_aeat_rege_members_related"/>
         </record>

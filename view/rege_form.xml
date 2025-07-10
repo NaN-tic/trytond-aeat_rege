@@ -4,8 +4,8 @@
     <group id="metadata" col="-1" xexpand="0">
         <label name="is_active"/>
         <field name="is_active" xexpand="0"/>
-        <label name="type"/>
-        <field name="type" xexpand="0"/>
+        <label name="current_type"/>
+        <field name="current_type" xexpand="0"/>
     </group>
     <notebook>
         <page id="periods-info" string="Periods">

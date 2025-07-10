@@ -2,7 +2,7 @@
 <data>
     <xpath expr="/form/notebook" position="inside">
         <page id="rege" string="REGE">
-            <field name="reges"/>
+            <field name="rege_memberships"/>
         </page>
     </xpath>
 

@@ -13,7 +13,7 @@ this repository contains the full copyright notices and license terms. -->
             <field name="text">The period "%(main)s" overlaps with the following period(s): %(period)s. Please adjust the date ranges to avoid overlap.</field>
         </record>
         <record model="ir.message" id="msg_active_membership">
-            <field name="text">The party "%(party)s" is already enrolled in REGE "%(rege)s".</field>
+            <field name="text">The party "%(party)s" has an active membership in REGE "%(rege)s". Please remove this membership before enrolling again.</field>
         </record>
     </data>
 </tryton>
