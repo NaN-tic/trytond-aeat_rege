@@ -1,4 +1,3 @@
-from decimal import Decimal
 from trytond.model import Check, Index, ModelSQL, ModelView, Unique, fields
 from trytond.pool import Pool, PoolMeta
 from trytond.pyson import Bool, Eval, If
@@ -37,7 +36,7 @@ class REGE(ModelView, ModelSQL):
         'on_change_with_current_type')
     is_active = fields.Function(
         fields.Boolean('Is Currently Active?'),
-        'get_is_active')
+        'on_change_with_is_active')
 
     @classmethod
     def __setup__(cls):
@@ -49,9 +48,10 @@ class REGE(ModelView, ModelSQL):
             'aeat_rege.msg_unique_rege_name'))
 
     def get_active_member_count(self, name):
-        return sum(1 for m in self.members if m.active)
+        return sum(1 for m in self.members if m.active) or None
 
-    def get_is_active(self, name):
+    @fields.depends('periods')
+    def on_change_with_is_active(self, name=None):
         return any(period.state == 'open' for period in self.periods)
 
     @fields.depends('periods')
