@@ -15,9 +15,9 @@ class REGE(ModelView, ModelSQL):
     __name__ = 'aeat.rege'
 
     name = fields.Char('Name',
-        help='A unique name identifying this group of entities.', required=True)
+        help='A unique name identifying the group of entities.', required=True)
     periods = fields.One2Many('aeat.rege.period', 'rege', 'Periods',
-        help='The time intervals during which this REGE was active.',
+        help='The date intervals during which the REGE was active.',
         required=True)
     members = fields.One2Many('aeat.rege.member', 'rege', 'Members',
         help='History of party memberships.')
@@ -29,12 +29,12 @@ class REGE(ModelView, ModelSQL):
         fields.Selection([
             ('normal', 'Normal'),
             ('advanced', 'Advanced'),
-            ], 'Today Type',
+            ], 'Current Type',
             help='Tax regime of the currently open period.',
             states={ 'invisible': ~Bool(Eval('is_active')) }),
         'on_change_with_current_type')
     is_active = fields.Function(
-        fields.Boolean('Today Active?'),
+        fields.Boolean('Active Today?'),
         'on_change_with_is_active')
 
     @classmethod
@@ -59,7 +59,13 @@ class REGE(ModelView, ModelSQL):
     def on_change_with_is_active(self, name=None):
         return any(period.state == 'open' for period in self.periods)
 
-    def get_period_by_date(self, target_date):
+    def get_period_by_date(self, target_date=None):
+        pool = Pool()
+        Date = pool.get('ir.date')
+
+        if not target_date:
+            target_date = Date.today()
+
         for period in self.periods:
             if period.contains_date(target_date):
                 return period
@@ -75,7 +81,7 @@ class REGEPeriod(ModelView, ModelSQL):
     type = fields.Selection([
         ('normal', 'Normal'),
         ('advanced', 'Advanced'),
-        ], 'Type', help='Tax regime applied during this period.',
+        ], 'Type', help='Tax regime applied during the period.',
         required=True)
     start_date = fields.Date('Starting Date',
         help='Start date of the period; leave empty for no lower limit.',
@@ -96,7 +102,7 @@ class REGEPeriod(ModelView, ModelSQL):
             ('open', 'Open'),
             ('closed', 'Closed'),
             ('scheduled', 'Scheduled'),
-            ], 'State',
+            ], 'Current State',
             help=('Indicates if today is within this period, '
                 'after it or before it.')),
         'on_change_with_state')
@@ -195,8 +201,8 @@ class REGEMember(ModelView, ModelSQL):
             (),
         )])
     is_active = fields.Function(
-        fields.Boolean('Today Active?',
-            help='Indicates if today is within this membership.'),
+        fields.Boolean('Active Today?',
+            help='Indicates if the membership is active today.'),
         'on_change_with_is_active', searcher='search_is_active')
 
     @classmethod
@@ -321,19 +327,24 @@ class InvoiceLine(metaclass=PoolMeta):
     __name__ = 'account.invoice.line'
 
     cost_price = fields.Numeric('Cost Price', digits='currency',
+        help=('Enabled only if the Company and Party share the same AEAT REGE '
+            'in Advanced regime. Used for tax calculations; '
+            'defaults to the product\'s "Cost Price".'),
         states={
             'invisible': ~Bool(Eval('cost_price_show')),
             'required': Bool(Eval('cost_price_show')),
             })
     cost_price_show = fields.Function(
-        fields.Boolean('Show Cost Price?'),
+        fields.Boolean('Display Cost Price?'),
         'on_change_with_cost_price_show')
 
     @property
     def taxable_lines(self):
         taxable_lines = super().taxable_lines
         if getattr(self, 'cost_price_show', False):
-            taxable_lines[0][1] -= getattr(self, 'cost_price')
+            line = list(taxable_lines[0])
+            line[1] -= getattr(self, 'cost_price', None) or 0
+            taxable_lines[0] = tuple(line)
         return taxable_lines
 
     @fields.depends('product', '_parent_product.cost_price')
@@ -353,7 +364,7 @@ class InvoiceLine(metaclass=PoolMeta):
         target_date = self.invoice.accounting_date or self.invoice.invoice_date
 
         party_rege = self.invoice.party.get_rege_by_date(target_date)
-        company_rege = self.invoice.company.get_rege_by_date(target_date)
+        company_rege = self.invoice.company.party.get_rege_by_date(target_date)
         if not party_rege or not company_rege:
             return False
         elif party_rege != company_rege:
