@@ -120,6 +120,20 @@ this repository contains the full copyright notices and license terms. -->
             <field name="domain" eval="[('rege', 'in', Eval('active_ids'))]" pyson="1"/>
         </record>
 
+        <record model="ir.action.act_window.domain" id="act_aeat_rege_members_related_active_domain">
+            <field name="name">Today Active</field>
+            <field name="sequence" eval="10"/>
+            <field name="domain" eval="[('is_active', '=', True)]" pyson="1"/>
+            <field name="count" eval="True"/>
+            <field name="act_window" ref="act_aeat_rege_members_related"/>
+        </record>
+        <record model="ir.action.act_window.domain" id="act_aeat_rege_members_related_all_domain">
+            <field name="name">All</field>
+            <field name="sequence" eval="10"/>
+            <field name="domain" eval="[]" pyson="1"/>
+            <field name="act_window" ref="act_aeat_rege_members_related"/>
+        </record>
+
         <record model="ir.action.act_window.view" id="act_aeat_rege_members_related_view_tree">
             <field name="sequence" eval="10"/>
             <field name="view" ref="view_aeat_rege_member_list"/>

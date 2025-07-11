@@ -3,6 +3,9 @@
 this repository contains the full copyright notices and license terms. -->
 <tryton>
     <data grouped="1">
+        <record model="ir.message" id="msg_unique_rege_name">
+            <field name="text">The REGE name must be unique.</field>
+        </record>
         <record model="ir.message" id="msg_date_interval_period">
             <field name="text">The "Start Date" must be earlier than the "End Date".</field>
         </record>
@@ -12,8 +15,8 @@ this repository contains the full copyright notices and license terms. -->
         <record model="ir.message" id="msg_period_overlap">
             <field name="text">The period "%(main)s" overlaps with the following period(s): %(period)s. Please adjust the date ranges to avoid overlap.</field>
         </record>
-        <record model="ir.message" id="msg_active_membership">
-            <field name="text">The party "%(party)s" has an active membership in REGE "%(rege)s". Please remove this membership before enrolling again.</field>
+        <record model="ir.message" id="msg_membership_overlap">
+            <field name="text">The membership "%(main)s" overlaps with the following membership(s): %(membership)s. Please adjust the date ranges to avoid overlap.</field>
         </record>
     </data>
 </tryton>

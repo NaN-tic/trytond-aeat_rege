@@ -1,6 +1,6 @@
 <tree>
     <field name="name" expand="4"/>
-    <field name="current_type"/>
-    <field name="active_member_count"/>
+    <field name="active_member_count" optional="0"/>
     <field name="is_active" optional="0" expand="1"/>
+    <field name="current_type" optional="0"/>
 </tree>

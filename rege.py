@@ -15,27 +15,26 @@ class REGE(ModelView, ModelSQL):
     __name__ = 'aeat.rege'
 
     name = fields.Char('Name',
-        help='Unique name for this Group of Entities.', required=True)
+        help='A unique name identifying this group of entities.', required=True)
     periods = fields.One2Many('aeat.rege.period', 'rege', 'Periods',
-        help=('Periods defining the start and end dates '
-            'during which this REGE is active.'),
+        help='The time intervals during which this REGE was active.',
         required=True)
     members = fields.One2Many('aeat.rege.member', 'rege', 'Members',
-        help='Parties enrolled as members.')
+        help='History of party memberships.')
     active_member_count = fields.Function(
         fields.Integer('Active Members',
-            help='Number of parties currently registered.'),
+            help='Total number of parties currently registered.'),
         'get_active_member_count')
     current_type = fields.Function(
         fields.Selection([
             ('normal', 'Normal'),
             ('advanced', 'Advanced'),
-            ], 'Current Type',
-            help="Current taxation method (based on the 'open' period).",
+            ], 'Today Type',
+            help='Tax regime of the currently open period.',
             states={ 'invisible': ~Bool(Eval('is_active')) }),
         'on_change_with_current_type')
     is_active = fields.Function(
-        fields.Boolean('Is Currently Active?'),
+        fields.Boolean('Today Active?'),
         'on_change_with_is_active')
 
     @classmethod
@@ -48,31 +47,17 @@ class REGE(ModelView, ModelSQL):
             'aeat_rege.msg_unique_rege_name'))
 
     def get_active_member_count(self, name):
-        return sum(1 for m in self.members if m.active) or None
+        return sum(1 for m in self.members if m.is_active) or None
+
+    @fields.depends('periods')
+    def on_change_with_current_type(self, name=None):
+        for period in self.periods:
+            if period.state == 'open':
+                return period.type
 
     @fields.depends('periods')
     def on_change_with_is_active(self, name=None):
         return any(period.state == 'open' for period in self.periods)
-
-    @fields.depends('periods')
-    def on_change_with_current_type(self, name=None):
-        if not self.periods:
-            return
-        for period in self.periods:
-            if period.state == 'open':
-                return period.type
-        return 'normal'
-
-    @classmethod
-    def search_is_active(cls, name, clause):
-        table = cls.__table__()
-
-        _field, operator, value = clause
-        Operator = fields.SQL_OPERATORS[operator]
-
-        operand = table.periods.state == 'open'
-        query = table.select(table.id, where=(Operator(operand, value)))
-        return [('id', 'in', query)]
 
     def get_period_by_date(self, target_date):
         for period in self.periods:
@@ -85,22 +70,22 @@ class REGEPeriod(ModelView, ModelSQL):
     __name__ = 'aeat.rege.period'
 
     rege = fields.Many2One('aeat.rege', 'REGE',
-        help='The REGE to which this period belongs.',
+        help='REGE to which this period belongs.',
         required=True, ondelete='CASCADE')
     type = fields.Selection([
         ('normal', 'Normal'),
         ('advanced', 'Advanced'),
-        ], 'Type', help='Taxation regime applied during this period.',
+        ], 'Type', help='Tax regime applied during this period.',
         required=True)
     start_date = fields.Date('Starting Date',
-        help='Lower bound of the period; leave empty for no start limit.',
+        help='Start date of the period; leave empty for no lower limit.',
         domain=[If(
             (Eval('start_date') & Eval('end_date')),
             ('start_date', '<', Eval('end_date')),
             (),
         )])
     end_date = fields.Date('Ending Date',
-        help='Upper bound of the period; leave empty for no end limit.',
+        help='End date of the period; leave empty for no upper limit.',
         domain=[If(
             (Eval('start_date') & Eval('end_date')),
             ('end_date', '>', Eval('start_date')),
@@ -112,8 +97,8 @@ class REGEPeriod(ModelView, ModelSQL):
             ('closed', 'Closed'),
             ('scheduled', 'Scheduled'),
             ], 'State',
-            help=("Indicates whether today's date falls within "
-                "this period's start and end dates, does not or will do it.")),
+            help=('Indicates if today is within this period, '
+                'after it or before it.')),
         'on_change_with_state')
 
     @classmethod
@@ -121,7 +106,8 @@ class REGEPeriod(ModelView, ModelSQL):
         super().__setup__()
         table = cls.__table__()
         cls.__access__.add('rege')
-        cls._order.insert(0, ('start_date', 'DESC NULLS FIRST'))
+        cls._order = [('start_date', 'DESC NULLS FIRST'),
+            ('end_date', 'DESC NULLS FIRST')] + cls._order
         cls._sql_indexes.add(
             Index(
                 table,
@@ -137,8 +123,8 @@ class REGEPeriod(ModelView, ModelSQL):
         cls.check_date_intervals(records)
 
     def get_rec_name(self, name):
-        start_date = self.start_date or INFINITY_CHAR
-        end_date = self.end_date or INFINITY_CHAR
+        start_date = (str(self.start_date) or INFINITY_CHAR).replace('-', '/')
+        end_date = (str(self.end_date) or INFINITY_CHAR).replace('-', '/')
         return f'{start_date} - {end_date} ({self.type})'
 
     @fields.depends('start_date', 'end_date')
@@ -176,40 +162,42 @@ class REGEPeriod(ModelView, ModelSQL):
                 )))
             overlaps = [row[0] for row in cursor.fetchall()]
             if overlaps:
+                overlaps = [f'\n- "{cls(x).rec_name}"' for x in overlaps]
+                overlaps[-1] += '\n'
                 raise UserError(gettext('aeat_rege.msg_period_overlap',
                     main=period.rec_name,
-                    period=', '.join(f'"{cls(x).rec_name}"' for x in overlaps)))
+                    period=''.join(overlaps)))
 
     def contains_date(self, target_date):
         start_date = self.start_date or date.min
         end_date = self.end_date or date.max
         return start_date <= target_date <= end_date
 
-# TODO: Proponer realizar una herencia de 'ir.date' para que incluya el 'timezone' por defecto.
+
 class REGEMember(ModelView, ModelSQL):
     'Party membership on AEAT REGE'
     __name__ = 'aeat.rege.member'
 
     rege = fields.Many2One('aeat.rege', 'REGE',
-        help='The AEAT REGE in which the party enrolls.',
+        help='REGE to which the party is registered.',
         required=True, ondelete='CASCADE')
     party = fields.Many2One('party.party', 'Party',
-        help='The entity or person enrolling in this REGE.',
+        help='The entity or person registered.',
         required=True, ondelete='CASCADE')
     registration_date = fields.Date('Registration Date',
-        help="Date when the party's membership in this REGE begins.",
+        help='Date on which membership begins.',
         required=True)
     exit_date = fields.Date('Exit Date',
-        help="Date when the party's membership ends; leave empty if still active.",
+        help='Date on which membership ends; leave empty if still active.',
         domain=[If(
             (Eval('registration_date') & Eval('exit_date')),
             ('exit_date', '>', Eval('registration_date')),
             (),
         )])
-    active = fields.Function(
-        fields.Boolean('Is Membership Active?',
-            help="Indicates whether the party's membership in this REGE is currently active."),
-        'on_change_with_active', searcher='search_active')
+    is_active = fields.Function(
+        fields.Boolean('Today Active?',
+            help='Indicates if today is within this membership.'),
+        'on_change_with_is_active', searcher='search_is_active')
 
     @classmethod
     def __setup__(cls):
@@ -218,6 +206,11 @@ class REGEMember(ModelView, ModelSQL):
         cls.__access__.add('rege')
         cls._order = [
             ('exit_date', 'DESC NULLS FIRST'), ('party', 'ASC')] + cls._order
+        cls._sql_indexes.add(
+            Index(
+                table,
+                (table.registration_date, Index.Range()),
+                (table.exit_date, Index.Range())))
         cls._sql_constraints.append(('date_interval',
             Check(table, table.exit_date > table.registration_date),
             'aeat_rege.msg_date_interval_registration'))
@@ -231,35 +224,50 @@ class REGEMember(ModelView, ModelSQL):
     @classmethod
     def validate(cls, records):
         super().validate(records)
-        cls.check_memberships(records)
+        cls.check_date_intervals(records)
 
     @classmethod
-    def check_memberships(cls, records):
-        for record in records:
-            if not record.active:
-                continue
-            memberships = cls.search([
-                ('id', '!=', record.id),
-                ('party', '=', record.party.id),
-            ])
-            if memberships:
-                raise UserError(gettext('aeat_rege.msg_active_membership',
-                    party=record.party.rec_name, rege=record.rege.rec_name))
+    def check_date_intervals(cls, records):
+        cls.lock()
+        table = cls.__table__()
+        transaction = Transaction()
+        cursor = transaction.connection.cursor()
 
-    @fields.depends('exit_date')
-    def on_change_with_active(self, name=None):
+        for record in records:
+            start = table.registration_date
+            end = Coalesce(table.exit_date, date.max)
+            record_start = record.registration_date
+            record_end = Coalesce(record.exit_date, date.max)
+
+            cursor.execute(*table.select(table.id,
+                where=(
+                    (table.id != record.id) &
+                    (table.party == record.party.id) &
+                    (((start <= record_start) & (end >= record_start)) |
+                    ((start <= record_end) & (end >= record_end)) |
+                    ((start >= record_start) & (end <= record_end)))
+                )))
+            overlaps = [row[0] for row in cursor.fetchall()]
+            if overlaps:
+                overlaps = [f'\n- "{cls(x).rec_name}"' for x in overlaps]
+                overlaps[-1] += '\n'
+                raise UserError(gettext('aeat_rege.msg_membership_overlap',
+                    main=record.rec_name,
+                    member=''.join(overlaps)))
+
+    @fields.depends('registration_date', 'exit_date')
+    def on_change_with_is_active(self, name=None):
         pool = Pool()
         Date = pool.get('ir.date')
 
         today = Date.today()
-        if not self.exit_date:
-            return True
-        if today <= self.exit_date:
+        exit_date = self.exit_date or date.max
+        if self.registration_date <= today <= exit_date:
             return True
         return False
 
     @classmethod
-    def search_active(cls, name, clause):
+    def search_is_active(cls, name, clause):
         pool = Pool()
         Date = pool.get('ir.date')
 
@@ -269,9 +277,29 @@ class REGEMember(ModelView, ModelSQL):
         _field, operator, value = clause
         Operator = fields.SQL_OPERATORS[operator]
 
-        operand = today <= Coalesce(table.exit_date, date.max)
+        exit_date = Coalesce(table.exit_date, date.max)
+        operand = table.registration_date <= today <= exit_date
         query = table.select(table.id, where=(Operator(operand, value)))
         return [('id', 'in', query)]
+
+    @classmethod
+    def get_by_date(cls, party, target_date=None):
+        pool = Pool()
+        Date = pool.get('ir.date')
+
+        if not target_date:
+            target_date = Date.today()
+
+        memberships = cls.search([
+            ('party', '=', party.id),
+            ('registration_date', '<=', target_date),
+            ['OR',
+                ('exit_date', '=', None),
+                ('exit_date', '>=', target_date)
+            ]])
+        if not memberships:
+            return
+        return memberships[0]
 
 
 class Party(metaclass=PoolMeta):
@@ -279,56 +307,14 @@ class Party(metaclass=PoolMeta):
 
     rege_memberships = fields.One2Many(
         'aeat.rege.member', 'party', 'REGE Memberships')
-    shares_rege = fields.Function(
-        fields.Boolean('Shares REGE with current Company',
-            help=('Indicates if this party and the current company '
-                'shares membership in the same AEAT REGE.')),
-        'on_change_with_shares_rege')
 
-    @fields.depends('rege_memberships')
-    def on_change_with_shares_rege(self, name=None):
+    def get_rege_by_date(self, target_date=None):
         pool = Pool()
-        Company = pool.get('company.company')
+        REGEMember = pool.get('aeat.rege.member')
 
-        transaction = Transaction()
-        context = transaction.context
-
-        if 'company' not in context:
-            return False
-        company = Company(context['company'])
-        if not (company.party and company.party.rege_memberships):
-            return False
-
-        company_reges = {
-            member.rege.id
-            for member in company.party.rege_memberships
-            if member.rege and member.active}
-        party_reges = {
-            member.rege.id
-            for member in self.rege_memberships
-            if member.rege and member.active}
-
-        return len(company_reges.difference(party_reges)) != len(company_reges)
-
-    def get_rege(self):
-        pool = Pool()
-        Company = pool.get('company.company')
-
-        transaction = Transaction()
-        if 'company' not in transaction.context:
-            return
-
-        company = Company(transaction.context['company'])
-        for member in company.party.rege_memberships:
-            if member.active:
-                company_rege = member.rege
-                break
-        else:
-            return
-
-        for member in self.rege_memberships:
-            if member.active and member.rege.id == company_rege.id:
-                return member.rege
+        membership = REGEMember.get_by_date(self, target_date)
+        if membership:
+            return membership.rege
 
 
 class InvoiceLine(metaclass=PoolMeta):
@@ -347,7 +333,7 @@ class InvoiceLine(metaclass=PoolMeta):
     def taxable_lines(self):
         taxable_lines = super().taxable_lines
         if getattr(self, 'cost_price_show', False):
-            taxable_lines[0][1] -= getattr(self, 'cost_price') # TODO: Put 'on_change' and 'default' on 'cost_price'¿?
+            taxable_lines[0][1] -= getattr(self, 'cost_price')
         return taxable_lines
 
     @fields.depends('product', '_parent_product.cost_price')
@@ -357,21 +343,23 @@ class InvoiceLine(metaclass=PoolMeta):
 
     @fields.depends('type', 'invoice', '_parent_invoice.type',
         '_parent_invoice.company', '_parent_invoice.party',
-        '_parent_invoice.invoice_date')
+        '_parent_invoice.invoice_date', '_parent_invoice.accounting_date')
     def on_change_with_cost_price_show(self, name=None):
         if not (self.invoice and self.invoice.party and self.invoice.company
                 and self.invoice.type == 'out' and self.type == 'line'):
             return False
 
-        rege = self.invoice.party.get_rege()
-        if rege != self.invoice.company.party.get_rege():
+        # The method 'get_by_date' puts .today() if no date is given.
+        target_date = self.invoice.accounting_date or self.invoice.invoice_date
+
+        party_rege = self.invoice.party.get_rege_by_date(target_date)
+        company_rege = self.invoice.company.get_rege_by_date(target_date)
+        if not party_rege or not company_rege:
+            return False
+        elif party_rege != company_rege:
             return False
 
-        target_date = self.invoice.invoice_date # TODO:
-        if not target_date:
-            return False
-
-        period = rege.get_period_by_date(target_date)
+        period = party_rege.get_period_by_date(target_date)
         if not (period and period.type == 'advanced'):
             return False
         return True
