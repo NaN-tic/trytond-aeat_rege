@@ -326,9 +326,9 @@ class InvoiceLine(metaclass=PoolMeta):
     __name__ = 'account.invoice.line'
 
     cost_price = fields.Numeric('Cost Price', digits='currency',
-        help=('Enabled only if the Company and Party share the same AEAT REGE '
-            'in Advanced regime. Used for tax calculations; '
-            'defaults to the product\'s "Cost Price".'),
+        help=('Available only if the "Company" and "Party" '
+            'share the same REGE of type "Advanced"; used for '
+            'tax calculations and defaults to the product\'s cost price.'),
         states={
             'required': (Bool(Eval('cost_price_show'))
                 & Bool(Eval('invoice_state') == 'draft')),
