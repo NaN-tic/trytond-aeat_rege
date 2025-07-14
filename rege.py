@@ -129,9 +129,10 @@ class REGEPeriod(ModelView, ModelSQL):
         cls.check_date_intervals(records)
 
     def get_rec_name(self, name):
-        start_date = (str(self.start_date) or INFINITY_CHAR).replace('-', '/')
-        end_date = (str(self.end_date) or INFINITY_CHAR).replace('-', '/')
-        return f'{start_date} - {end_date} ({self.type})'
+        start_date = str(self.start_date or INFINITY_CHAR).replace('-', '/')
+        end_date = str(self.end_date or INFINITY_CHAR).replace('-', '/')
+        type = (self.type or '').capitalize()
+        return f'{start_date} - {end_date} ({type})'
 
     @fields.depends('start_date', 'end_date')
     def on_change_with_state(self, name=None):
@@ -147,7 +148,6 @@ class REGEPeriod(ModelView, ModelSQL):
 
     @classmethod
     def check_date_intervals(cls, periods):
-        cls.lock()
         table = cls.__table__()
         transaction = Transaction()
         cursor = transaction.connection.cursor()
@@ -234,7 +234,6 @@ class REGEMember(ModelView, ModelSQL):
 
     @classmethod
     def check_date_intervals(cls, records):
-        cls.lock()
         table = cls.__table__()
         transaction = Transaction()
         cursor = transaction.connection.cursor()
@@ -331,8 +330,14 @@ class InvoiceLine(metaclass=PoolMeta):
             'in Advanced regime. Used for tax calculations; '
             'defaults to the product\'s "Cost Price".'),
         states={
-            'invisible': ~Bool(Eval('cost_price_show')),
-            'required': Bool(Eval('cost_price_show')),
+            'required': (Bool(Eval('cost_price_show'))
+                & Bool(Eval('invoice_state') == 'draft')),
+            'invisible': (
+                (Bool(Eval('invoice_state') == 'draft')
+                    & ~Bool(Eval('cost_price_show')) |
+                (Bool(Eval('invoice_state') != 'draft')
+                    & ~Bool(Eval('cost_price'))))),
+            'readonly': Eval('invoice_state') != 'draft',
             })
     cost_price_show = fields.Function(
         fields.Boolean('Display Cost Price?'),
@@ -341,20 +346,27 @@ class InvoiceLine(metaclass=PoolMeta):
     @property
     def taxable_lines(self):
         taxable_lines = super().taxable_lines
-        if getattr(self, 'cost_price_show', False):
+
+        cost_price = getattr(self, 'cost_price', None) or 0
+        cost_price_show = getattr(self, 'cost_price_show', False)
+        invoice_state = getattr(self, 'invoice_state', None)
+
+        if ((invoice_state == 'draft' and cost_price_show)
+                or (invoice_state and invoice_state != 'draft' and cost_price)):
             line = list(taxable_lines[0])
-            line[1] -= getattr(self, 'cost_price', None) or 0
+            line[1] -= cost_price
             taxable_lines[0] = tuple(line)
         return taxable_lines
 
-    @fields.depends('product', '_parent_product.cost_price')
+    @fields.depends('product', 'invoice_state', '_parent_product.cost_price')
     def on_change_with_cost_price(self):
-        if self.product and self.product.cost_price:
+        if self.invoice_state == 'draft' and self.product:
             return self.product.cost_price
 
     @fields.depends('type', 'invoice', '_parent_invoice.type',
         '_parent_invoice.company', '_parent_invoice.party',
-        '_parent_invoice.invoice_date', '_parent_invoice.accounting_date')
+        '_parent_invoice.invoice_date', '_parent_invoice.accounting_date',
+        '_parent_invoice.create_date')
     def on_change_with_cost_price_show(self, name=None):
         if not (self.invoice and self.invoice.party and self.invoice.company
                 and self.invoice.type == 'out' and self.type == 'line'):
@@ -362,6 +374,8 @@ class InvoiceLine(metaclass=PoolMeta):
 
         # The method 'get_by_date' puts .today() if no date is given.
         target_date = self.invoice.accounting_date or self.invoice.invoice_date
+        if not target_date and self.invoice.create_date:
+            target_date = self.invoice.create_date.date()
 
         party_rege = self.invoice.party.get_rege_by_date(target_date)
         company_rege = self.invoice.company.party.get_rege_by_date(target_date)
