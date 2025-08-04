@@ -59,15 +59,15 @@ class REGE(ModelView, ModelSQL):
     def on_change_with_is_active(self, name=None):
         return any(period.state == 'open' for period in self.periods)
 
-    def get_period_by_date(self, target_date=None):
+    def get_period_by_date(self, date=None):
         pool = Pool()
         Date = pool.get('ir.date')
 
-        if not target_date:
-            target_date = Date.today()
+        if not date:
+            date = Date.today()
 
         for period in self.periods:
-            if period.contains_date(target_date):
+            if period.contains_date(date):
                 return period
 
 
@@ -174,10 +174,10 @@ class REGEPeriod(ModelView, ModelSQL):
                     main=period.rec_name,
                     period=''.join(overlaps)))
 
-    def contains_date(self, target_date):
+    def contains_date(self, date):
         start_date = self.start_date or date.min
         end_date = self.end_date or date.max
-        return start_date <= target_date <= end_date
+        return start_date <= date <= end_date
 
 
 class REGEMember(ModelView, ModelSQL):
@@ -288,19 +288,19 @@ class REGEMember(ModelView, ModelSQL):
         return [('id', 'in', query)]
 
     @classmethod
-    def get_by_date(cls, party, target_date=None):
+    def get_by_date(cls, party, date=None):
         pool = Pool()
         Date = pool.get('ir.date')
 
-        if not target_date:
-            target_date = Date.today()
+        if not date:
+            date = Date.today()
 
         memberships = cls.search([
             ('party', '=', party.id),
-            ('registration_date', '<=', target_date),
+            ('registration_date', '<=', date),
             ['OR',
                 ('exit_date', '=', None),
-                ('exit_date', '>=', target_date)
+                ('exit_date', '>=', date)
             ]])
         if not memberships:
             return
@@ -313,11 +313,11 @@ class Party(metaclass=PoolMeta):
     rege_memberships = fields.One2Many(
         'aeat.rege.member', 'party', 'REGE Memberships')
 
-    def get_rege_by_date(self, target_date=None):
+    def get_rege_by_date(self, date=None):
         pool = Pool()
         REGEMember = pool.get('aeat.rege.member')
 
-        membership = REGEMember.get_by_date(self, target_date)
+        membership = REGEMember.get_by_date(self, date)
         if membership:
             return membership.rege
 
@@ -358,29 +358,27 @@ class InvoiceLine(metaclass=PoolMeta):
 
     @fields.depends('company', 'cost_price', 'invoice', 'invoice_party',
         'invoice_state', 'invoice_type', 'type',
-        '_parent_invoice.accounting_date', '_parent_invoice.create_date',
-        '_parent_invoice.invoice_date')
+        '_parent_invoice.accounting_date', '_parent_invoice.invoice_date')
     def on_change_with_cost_price_show(self, name=None):
-        if not (self.type == 'line' and self.invoice_type == 'out'
-                and self.invoice):
+        Date = Pool().get('ir.date')
+        
+        if (not self.company or not self.invoice_party or self.type != 'line'
+                or self.invoice_type == 'in' or not self.invoice):
             return False
 
-        if not (self.company and self.invoice_party):
-            return False
+        date = (self.invoice.accounting_date or self.invoice.invoice_date
+            or Date.today())
 
-        target_date = (self.invoice.accounting_date or self.invoice.invoice_date
-            or self.invoice.create_date.date())
-
-        party_rege = self.invoice_party.get_rege_by_date(target_date)
-        company_rege = self.company.party.get_rege_by_date(target_date)
+        party_rege = self.invoice_party.get_rege_by_date(date)
+        company_rege = self.company.party.get_rege_by_date(date)
         if not party_rege or not company_rege or party_rege != company_rege:
             return False
 
-        period = party_rege.get_period_by_date(target_date)
-        if not (period and period.type == 'advanced'):
+        period = party_rege.get_period_by_date(date)
+        if not period or period.type != 'advanced':
             return False
 
         if self.invoice_state != 'draft':
             return self.cost_price > 0
-        else:
-            return True
+        
+        return True
