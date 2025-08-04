@@ -345,7 +345,7 @@ class InvoiceLine(metaclass=PoolMeta):
         cost_price = getattr(self, 'cost_price', None) or 0
         cost_price_show = getattr(self, 'cost_price_show', False)
 
-        if cost_price_show:
+        if cost_price_show and taxable_lines:
             line = list(taxable_lines[0])
             line[1] -= cost_price
             taxable_lines[0] = tuple(line)
