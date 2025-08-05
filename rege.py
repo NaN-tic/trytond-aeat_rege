@@ -168,11 +168,9 @@ class REGEPeriod(ModelView, ModelSQL):
                 )))
             overlaps = [row[0] for row in cursor.fetchall()]
             if overlaps:
-                overlaps = [f'\n- "{cls(x).rec_name}"' for x in overlaps]
-                overlaps[-1] += '\n'
                 raise UserError(gettext('aeat_rege.msg_period_overlap',
                     main=period.rec_name,
-                    period=''.join(overlaps)))
+                    period='", "'.join(cls(x).rec_name for x in overlaps)))
 
     def contains_date(self, date):
         start_date = self.start_date or date.min
@@ -254,11 +252,12 @@ class REGEMember(ModelView, ModelSQL):
                 )))
             overlaps = [row[0] for row in cursor.fetchall()]
             if overlaps:
-                overlaps = [f'\n- "{cls(x).rec_name}"' for x in overlaps]
-                overlaps[-1] += '\n'
                 raise UserError(gettext('aeat_rege.msg_membership_overlap',
                     main=record.rec_name,
-                    member=''.join(overlaps)))
+                    member='", "'.join(cls(x).rec_name for x in overlaps)))
+
+    def get_rec_name(self, name):
+        return f'{self.rege.rec_name} - {self.party.rec_name}'
 
     @fields.depends('registration_date', 'exit_date')
     def on_change_with_is_active(self, name=None):
@@ -361,7 +360,7 @@ class InvoiceLine(metaclass=PoolMeta):
         '_parent_invoice.accounting_date', '_parent_invoice.invoice_date')
     def on_change_with_cost_price_show(self, name=None):
         Date = Pool().get('ir.date')
-        
+
         if (not self.company or not self.invoice_party or self.type != 'line'
                 or self.invoice_type == 'in' or not self.invoice):
             return False
@@ -380,5 +379,5 @@ class InvoiceLine(metaclass=PoolMeta):
 
         if self.invoice_state != 'draft':
             return self.cost_price is not None
-        
+
         return True

@@ -13,10 +13,10 @@ this repository contains the full copyright notices and license terms. -->
             <field name="text">The "Registration Date" must be earlier than the "Exit Date".</field>
         </record>
         <record model="ir.message" id="msg_period_overlap">
-            <field name="text">The period "%(main)s" overlaps with the following period(s): %(period)s. Please adjust the date ranges to avoid overlap.</field>
+            <field name="text">The period "%(main)s" overlaps with the following period(s): "%(period)s". Please adjust the date ranges to avoid overlap.</field>
         </record>
         <record model="ir.message" id="msg_membership_overlap">
-            <field name="text">The membership "%(main)s" overlaps with the following membership(s): %(member)s. Please adjust the date ranges to avoid overlap.</field>
+            <field name="text">The membership "%(main)s" overlaps with the following membership(s): "%(member)s". Please adjust the date ranges to avoid overlap.</field>
         </record>
     </data>
 </tryton>
