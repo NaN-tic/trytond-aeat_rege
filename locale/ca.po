@@ -1,0 +1,278 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"POT-Creation-Date: \n"
+"PO-Revision-Date: \n"
+"Last-Translator: Ismael Marcos Martínez <ismael.marcos@nan-tic.com>\n"
+"Language-Team: \n"
+"Language: ca\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 3.2.2\n"
+
+msgctxt "field:account.invoice.line,cost_price:"
+msgid "Cost Price"
+msgstr "Preu de cost"
+
+msgctxt "field:account.invoice.line,cost_price_show:"
+msgid "Display Cost Price?"
+msgstr "Mostrar el preu de cost?"
+
+msgctxt "field:aeat.rege,active_member_count:"
+msgid "Active Members"
+msgstr "Membres actius"
+
+msgctxt "field:aeat.rege,current_type:"
+msgid "Current Type"
+msgstr "Tipus actual"
+
+msgctxt "field:aeat.rege,is_active:"
+msgid "Active Today?"
+msgstr "Actiu avui?"
+
+msgctxt "field:aeat.rege,members:"
+msgid "Members"
+msgstr "Membres"
+
+msgctxt "field:aeat.rege,name:"
+msgid "Name"
+msgstr "Nom"
+
+msgctxt "field:aeat.rege,periods:"
+msgid "Periods"
+msgstr "Períodes"
+
+msgctxt "field:aeat.rege.member,exit_date:"
+msgid "Exit Date"
+msgstr "Data de sortida"
+
+msgctxt "field:aeat.rege.member,is_active:"
+msgid "Active Today?"
+msgstr "Actiu avui?"
+
+msgctxt "field:aeat.rege.member,party:"
+msgid "Party"
+msgstr "Tercer"
+
+msgctxt "field:aeat.rege.member,rege:"
+msgid "REGE"
+msgstr "REGE"
+
+msgctxt "field:aeat.rege.member,registration_date:"
+msgid "Registration Date"
+msgstr "Data de registre"
+
+msgctxt "field:aeat.rege.period,end_date:"
+msgid "Ending Date"
+msgstr "Data final"
+
+msgctxt "field:aeat.rege.period,rege:"
+msgid "REGE"
+msgstr "REGE"
+
+msgctxt "field:aeat.rege.period,start_date:"
+msgid "Starting Date"
+msgstr "Data d'inici"
+
+msgctxt "field:aeat.rege.period,state:"
+msgid "Current State"
+msgstr "Estat actual"
+
+msgctxt "field:aeat.rege.period,type:"
+msgid "Type"
+msgstr "Tipus"
+
+msgctxt "field:party.party,rege_memberships:"
+msgid "REGE Memberships"
+msgstr "Membres de REGE"
+
+msgctxt "help:account.invoice.line,cost_price:"
+msgid ""
+"Available only if the \"Company\" and \"Party\" share the same REGE of type "
+"\"Advanced\"; used for tax calculations and defaults to the product's cost "
+"price."
+msgstr ""
+"Només disponible si \"Empresa\" i \"Tercer\" comparteixen el mateix REGE de "
+"tipus \"Avançat\"; s'utilitza per a càlculs d'impostos i per defecte és el "
+"preu de cost del producte."
+
+msgctxt "help:aeat.rege,active_member_count:"
+msgid "Total number of parties currently registered."
+msgstr "Nombre total de tercers actualment registrats."
+
+msgctxt "help:aeat.rege,current_type:"
+msgid "Tax regime of the currently open period."
+msgstr "Opció de tributació del període actualment obert."
+
+msgctxt "help:aeat.rege,members:"
+msgid "History of party memberships."
+msgstr "Historial de l'afiliació de tercers."
+
+msgctxt "help:aeat.rege,name:"
+msgid "A unique name identifying the group of entities."
+msgstr "Un nom únic que identifica el grup d'entitats."
+
+msgctxt "help:aeat.rege,periods:"
+msgid "The date intervals during which the REGE was active."
+msgstr "Els intervals de dates durant els quals el REGE va estar actiu."
+
+msgctxt "help:aeat.rege.member,exit_date:"
+msgid "Date on which membership ends; leave empty if still active."
+msgstr ""
+"Data en què finalitza la subscripció; deixeu-ho en blanc si encara és "
+"activa."
+
+msgctxt "help:aeat.rege.member,is_active:"
+msgid "Indicates if the membership is active today."
+msgstr "Indica si la subscripció està activa avui."
+
+msgctxt "help:aeat.rege.member,party:"
+msgid "The entity or person registered."
+msgstr "L'entitat o persona registrada."
+
+msgctxt "help:aeat.rege.member,rege:"
+msgid "REGE to which the party is registered."
+msgstr "REGE al qual està registrat el tercer."
+
+msgctxt "help:aeat.rege.member,registration_date:"
+msgid "Date on which membership begins."
+msgstr "Data en què comença la subscripció."
+
+msgctxt "help:aeat.rege.period,end_date:"
+msgid "End date of the period; leave empty for no upper limit."
+msgstr ""
+"Data de finalització del període; deixeu-ho en blanc si no hi ha límit "
+"superior."
+
+msgctxt "help:aeat.rege.period,rege:"
+msgid "REGE to which this period belongs."
+msgstr "REGE al qual pertany aquest període."
+
+msgctxt "help:aeat.rege.period,start_date:"
+msgid "Start date of the period; leave empty for no lower limit."
+msgstr ""
+"Data d'inici del període; deixeu-ho en blanc si no hi ha un límit inferior."
+
+msgctxt "help:aeat.rege.period,state:"
+msgid "Indicates if today is within this period, after it or before it."
+msgstr ""
+"Indica si el dia d'avui és dins d'aquest període, posterior o anterior."
+
+msgctxt "help:aeat.rege.period,type:"
+msgid "Tax regime applied during the period."
+msgstr "Opció de tributació aplicat durant el període."
+
+msgctxt "model:aeat.rege,name:"
+msgid "AEAT REGE (Special Regime for Groups of Entities)"
+msgstr "AEAT REGE (Règim especial del grup d'entitats)"
+
+msgctxt "model:aeat.rege.member,name:"
+msgid "Party membership on AEAT REGE"
+msgstr "Afiliació de tercers a l'AEAT REGE"
+
+msgctxt "model:aeat.rege.period,name:"
+msgid "AEAT REGE Period"
+msgstr "Període AEAT REGE"
+
+msgctxt "model:ir.action,name:act_aeat_rege"
+msgid "Special Regime for Groups of Entities"
+msgstr "Règim especial del grup d'entitats"
+
+msgctxt "model:ir.action,name:act_aeat_rege_members_related"
+msgid "REGE Members"
+msgstr "Membres de REGE"
+
+msgctxt "model:ir.action,name:act_aeat_rege_period"
+msgid "REGE Periods"
+msgstr "Períodes REGE"
+
+msgctxt ""
+"model:ir.action.act_window.domain,name:"
+"act_aeat_rege_members_related_active_domain"
+msgid "Today Active"
+msgstr "Actiu avui"
+
+msgctxt ""
+"model:ir.action.act_window.domain,name:"
+"act_aeat_rege_members_related_all_domain"
+msgid "All"
+msgstr "Tot"
+
+msgctxt "model:ir.message,text:msg_date_interval_period"
+msgid "The \"Start Date\" must be earlier than the \"End Date\"."
+msgstr "La \"Data d'inici\" ha de ser anterior a la \"Data final\"."
+
+msgctxt "model:ir.message,text:msg_date_interval_registration"
+msgid "The \"Registration Date\" must be earlier than the \"Exit Date\"."
+msgstr "La \"Data de registre\" ha de ser anterior a la \"Data de sortida\"."
+
+msgctxt "model:ir.message,text:msg_membership_overlap"
+msgid ""
+"The membership \"%(main)s\" overlaps with the following membership(s): "
+"\"%(member)s\". Please adjust the date ranges to avoid overlap."
+msgstr ""
+"La subscripció \"%(main)s\" se superposa amb la(es) subscripció(ns) "
+"següent(s): \"%(member)s\". Ajusteu els intervals de dates per evitar que "
+"se superposin."
+
+msgctxt "model:ir.message,text:msg_period_overlap"
+msgid ""
+"The period \"%(main)s\" overlaps with the following period(s): "
+"\"%(period)s\". Please adjust the date ranges to avoid overlap."
+msgstr ""
+"El període \"%(main)s\" se superposa amb el(s) període(s) següent(s): "
+"\"%(period)s\". Ajusteu els intervals de dates per evitar la superposició."
+
+msgctxt "model:ir.message,text:msg_unique_rege_name"
+msgid "The REGE name must be unique."
+msgstr "El nom REGE ha de ser únic."
+
+msgctxt "model:ir.ui.menu,name:menu_aeat_rege"
+msgid "Special Regime for Groups of Entities"
+msgstr "Règim especial del grup d'entitats"
+
+msgctxt "model:ir.ui.menu,name:menu_aeat_rege_period"
+msgid "REGE Periods"
+msgstr "Períodes REGE"
+
+msgctxt "selection:aeat.rege,current_type:"
+msgid "Advanced"
+msgstr "Avançat"
+
+msgctxt "selection:aeat.rege,current_type:"
+msgid "Normal"
+msgstr "Normal"
+
+msgctxt "selection:aeat.rege.period,state:"
+msgid "Closed"
+msgstr "Tancat"
+
+msgctxt "selection:aeat.rege.period,state:"
+msgid "Open"
+msgstr "Obert"
+
+msgctxt "selection:aeat.rege.period,state:"
+msgid "Scheduled"
+msgstr "Programat"
+
+msgctxt "selection:aeat.rege.period,type:"
+msgid "Advanced"
+msgstr "Avançat"
+
+msgctxt "selection:aeat.rege.period,type:"
+msgid "Normal"
+msgstr "Normal"
+
+msgctxt "view:aeat.rege:"
+msgid "Members"
+msgstr "Membres"
+
+msgctxt "view:aeat.rege:"
+msgid "Periods"
+msgstr "Períodes"
+
+msgctxt "view:party.party:"
+msgid "REGE"
+msgstr "REGE"
