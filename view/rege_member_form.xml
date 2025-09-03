@@ -1,0 +1,10 @@
+<form col="4">
+    <label name="rege"/>
+    <field name="rege"/>
+    <label name="party"/>
+    <field name="party"/>
+    <label name="registration_date"/>
+    <field name="registration_date"/>
+    <label name="exit_date"/>
+    <field name="exit_date"/>
+</form>

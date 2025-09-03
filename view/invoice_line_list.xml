@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<data>
+    <xpath expr="/tree/field[@name='unit_price']" position="after">
+        <field name="cost_price" optional="1"/>
+    </xpath>
+</data>
