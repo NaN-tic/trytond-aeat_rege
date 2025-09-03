@@ -1,0 +1,18 @@
+<form>
+    <label name="name"/>
+    <field name="name"/>
+    <group id="metadata" col="-1" xexpand="0">
+        <label name="is_active"/>
+        <field name="is_active" xexpand="0"/>
+        <label name="current_type"/>
+        <field name="current_type" xexpand="0"/>
+    </group>
+    <notebook>
+        <page id="periods-info" string="Periods">
+            <field name="periods" height="500"/>
+        </page>
+        <page id="members-info" string="Members">
+            <field name="members" height="500"/>
+        </page>
+    </notebook>
+</form>
