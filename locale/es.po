@@ -1,16 +1,10 @@
 #
 msgid ""
-msgstr ""
-"Project-Id-Version: \n"
-"POT-Creation-Date: \n"
-"PO-Revision-Date: \n"
-"Last-Translator: Ismael Marcos Martínez <ismael.marcos@nan-tic.com>\n"
-"Language-Team: \n"
-"Language: es\n"
-"MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=utf-8\n"
-"Content-Transfer-Encoding: 8bit\n"
-"X-Generator: Poedit 3.2.2\n"
+msgstr "Content-Type: text/plain; charset=utf-8\n"
+
+msgctxt "field:account.invoice,cost_price_show:"
+msgid "Display Cost Price?"
+msgstr "¿Mostrar precio de coste?"
 
 msgctxt "field:account.invoice.line,cost_price:"
 msgid "Cost Price"
@@ -185,14 +179,12 @@ msgid "REGE Periods"
 msgstr "Períodos REGE"
 
 msgctxt ""
-"model:ir.action.act_window.domain,name:"
-"act_aeat_rege_members_related_active_domain"
+"model:ir.action.act_window.domain,name:act_aeat_rege_members_related_active_domain"
 msgid "Today Active"
 msgstr "Hoy activo"
 
 msgctxt ""
-"model:ir.action.act_window.domain,name:"
-"act_aeat_rege_members_related_all_domain"
+"model:ir.action.act_window.domain,name:act_aeat_rege_members_related_all_domain"
 msgid "All"
 msgstr "Todo"
 
@@ -204,6 +196,11 @@ msgctxt "model:ir.message,text:msg_date_interval_registration"
 msgid "The \"Registration Date\" must be earlier than the \"Exit Date\"."
 msgstr "La \"Fecha de registro\" debe ser anterior a la \"Fecha de salida\"."
 
+msgctxt "model:ir.message,text:msg_legal_notice_tax"
+msgid "REGE special regime article 163 eighties.ú of the VAT Law"
+msgstr "Régimen especial REGE articulo 163 octies.uno de la Ley IVA"
+
+#, python-format
 msgctxt "model:ir.message,text:msg_membership_overlap"
 msgid ""
 "The membership \"%(main)s\" overlaps with the following membership(s): "
@@ -212,6 +209,7 @@ msgstr ""
 "La membresía \"%(main)s\" se superpone con la(s) siguiente(s) membresía(s): "
 "\"%(member)s\". Ajuste los rangos de fechas para evitar solapamientos."
 
+#, python-format
 msgctxt "model:ir.message,text:msg_period_overlap"
 msgid ""
 "The period \"%(main)s\" overlaps with the following period(s): "

@@ -1,16 +1,10 @@
 #
 msgid ""
-msgstr ""
-"Project-Id-Version: \n"
-"POT-Creation-Date: \n"
-"PO-Revision-Date: \n"
-"Last-Translator: Ismael Marcos Martínez <ismael.marcos@nan-tic.com>\n"
-"Language-Team: \n"
-"Language: ca\n"
-"MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=utf-8\n"
-"Content-Transfer-Encoding: 8bit\n"
-"X-Generator: Poedit 3.2.2\n"
+msgstr "Content-Type: text/plain; charset=utf-8\n"
+
+msgctxt "field:account.invoice,cost_price_show:"
+msgid "Display Cost Price?"
+msgstr "Mostrar el preu de cost?"
 
 msgctxt "field:account.invoice.line,cost_price:"
 msgid "Cost Price"
@@ -189,14 +183,12 @@ msgid "REGE Periods"
 msgstr "Períodes REGE"
 
 msgctxt ""
-"model:ir.action.act_window.domain,name:"
-"act_aeat_rege_members_related_active_domain"
+"model:ir.action.act_window.domain,name:act_aeat_rege_members_related_active_domain"
 msgid "Today Active"
 msgstr "Actiu avui"
 
 msgctxt ""
-"model:ir.action.act_window.domain,name:"
-"act_aeat_rege_members_related_all_domain"
+"model:ir.action.act_window.domain,name:act_aeat_rege_members_related_all_domain"
 msgid "All"
 msgstr "Tot"
 
@@ -208,15 +200,21 @@ msgctxt "model:ir.message,text:msg_date_interval_registration"
 msgid "The \"Registration Date\" must be earlier than the \"Exit Date\"."
 msgstr "La \"Data de registre\" ha de ser anterior a la \"Data de sortida\"."
 
+msgctxt "model:ir.message,text:msg_legal_notice_tax"
+msgid "REGE special regime article 163 eighties.ú of the VAT Law"
+msgstr "Règim especial REGE article 163 octies.ú de la Llei IVA"
+
+#, python-format
 msgctxt "model:ir.message,text:msg_membership_overlap"
 msgid ""
 "The membership \"%(main)s\" overlaps with the following membership(s): "
 "\"%(member)s\". Please adjust the date ranges to avoid overlap."
 msgstr ""
 "La subscripció \"%(main)s\" se superposa amb la(es) subscripció(ns) "
-"següent(s): \"%(member)s\". Ajusteu els intervals de dates per evitar que "
-"se superposin."
+"següent(s): \"%(member)s\". Ajusteu els intervals de dates per evitar que se"
+" superposin."
 
+#, python-format
 msgctxt "model:ir.message,text:msg_period_overlap"
 msgid ""
 "The period \"%(main)s\" overlaps with the following period(s): "
