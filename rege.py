@@ -321,6 +321,27 @@ class Party(metaclass=PoolMeta):
             return membership.rege
 
 
+class Invoice(metaclass=PoolMeta):
+    __name__ = 'account.invoice'
+
+    cost_price_show = fields.Function(
+        fields.Boolean('Display Cost Price?'),
+        'on_change_with_cost_price_show')
+
+    @fields.depends('lines')
+    def on_change_with_cost_price_show(self, name=None):
+        if not self.lines:
+            return False
+        return all([x.cost_price_show for x in self.lines])
+
+    @fields.depends('cost_price_show')
+    def _on_change_lines_taxes(self):
+        super()._on_change_lines_taxes()
+        if self.cost_price_show:
+            for tax in (self.taxes or []):
+                tax.legal_notice = gettext("aeat_rege.msg_legal_notice_tax")
+
+
 class InvoiceLine(metaclass=PoolMeta):
     __name__ = 'account.invoice.line'
 
