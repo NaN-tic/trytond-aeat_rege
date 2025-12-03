@@ -85,3 +85,8 @@ class InvoiceLine(metaclass=PoolMeta):
             return self.cost_price is not None
 
         return True
+
+    def _credit(self):
+        line = super()._credit()
+        line.cost_price = self.cost_price
+        return line
