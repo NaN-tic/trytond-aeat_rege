@@ -19,7 +19,7 @@ class Test(unittest.TestCase):
         drop_db()
 
     def test(self):
-        activate_modules(['aeat_rege'])
+        activate_modules(['aeat_rege', 'account_es'])
 
         Invoice = Model.get('account.invoice')
         Rege = Model.get('aeat.rege')
