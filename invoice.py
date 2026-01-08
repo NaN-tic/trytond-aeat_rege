@@ -17,13 +17,6 @@ class Invoice(metaclass=PoolMeta):
             return False
         return all([x.cost_price_show for x in self.lines])
 
-    @fields.depends('cost_price_show')
-    def _on_change_lines_taxes(self):
-        super()._on_change_lines_taxes()
-        if self.cost_price_show:
-            for tax in (self.taxes or []):
-                tax.legal_notice = gettext("aeat_rege.msg_legal_notice_tax")
-
 
 class InvoiceLine(metaclass=PoolMeta):
     __name__ = 'account.invoice.line'
