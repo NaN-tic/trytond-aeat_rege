@@ -18,8 +18,5 @@ this repository contains the full copyright notices and license terms. -->
         <record model="ir.message" id="msg_membership_overlap">
             <field name="text">The membership "%(main)s" overlaps with the following membership(s): "%(member)s". Please adjust the date ranges to avoid overlap.</field>
         </record>
-        <record model="ir.message" id="msg_legal_notice_tax">
-            <field name="text">REGE special regime article 163 eighties.ú of the VAT Law</field>
-        </record>
     </data>
 </tryton>
