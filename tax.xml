@@ -1,0 +1,67 @@
+<!-- This file is part of Tryton.  The COPYRIGHT file at the top level of
+this repository contains the full copyright notices and license terms. -->
+<tryton>
+    <data depends="account_es">
+        <record model="account.tax.template" id="iva_ex_rege_purchase">
+            <field name="name">IVA Exento REGE (Compras)</field>
+            <field name="description">IVA Exento REGE (Compras)</field>
+            <field name="account" ref="pgc_0"/>
+            <field name="group" ref="tax_group_purchase"/>
+            <field name="type">percentage</field>
+            <field name="isp" eval="False"/>
+            <field name="service" eval="False"/>
+            <field name="tax_kind">vat</field>
+            <field name="rate" eval="Decimal('0.0')"/>
+            <field name="invoice_account" ref="pgc_472000"/>
+            <field name="credit_note_account" ref="pgc_472000"/>
+            <field name="sequence" eval="9999"/>
+            <field name="deducible" eval="True"/>
+            <field name="legal_notice">Operación exenta, Régimen especial REGE artículo 163 octies.uno de la Ley IVA 37/1992</field>
+        </record>
+        <record model="account.tax.template" id="iva_ex_rege_sale">
+            <field name="name">IVA Exento REGE (Ventas)</field>
+            <field name="description">IVA Exento REGE (Ventas)</field>
+            <field name="account" ref="pgc_0"/>
+            <field name="group" ref="tax_group_sale"/>
+            <field name="type">percentage</field>
+            <field name="isp" eval="False"/>
+            <field name="service" eval="False"/>
+            <field name="tax_kind">vat</field>
+            <field name="rate" eval="Decimal('0.0')"/>
+            <field name="invoice_account" ref="pgc_477000"/>
+            <field name="credit_note_account" ref="pgc_477000"/>
+            <field name="sequence" eval="1030"/>
+            <field name="deducible" eval="True"/>
+            <field name="legal_notice">Operación exenta, Régimen especial REGE artículo 163 octies.uno de la Ley IVA 37/1992</field>
+        </record>
+
+        <record model="account.tax.code.line.template" id="iva_ex_rege_purchase-base_rep_ex-invoice-base">
+            <field name="code" ref="base_rep_ex"/>
+            <field name="tax" ref="iva_ex_rege_purchase"/>
+            <field name="operator">+</field>
+            <field name="type">invoice</field>
+            <field name="amount">base</field>
+        </record>
+        <record model="account.tax.code.line.template" id="iva_ex_rege_purchase-base_rep_ex-credit-base">
+            <field name="code" ref="base_rep_ex"/>
+            <field name="tax" ref="iva_ex_rege_purchase"/>
+            <field name="operator">-</field>
+            <field name="type">credit</field>
+            <field name="amount">base</field>
+        </record>
+        <record model="account.tax.code.line.template" id="iva_ex_rege_sale-base_rep_ex-invoice-base">
+            <field name="code" ref="base_rep_ex"/>
+            <field name="tax" ref="iva_ex_rege_sale"/>
+            <field name="operator">+</field>
+            <field name="type">invoice</field>
+            <field name="amount">base</field>
+        </record>
+        <record model="account.tax.code.line.template" id="iva_ex_rege_sale-base_rep_ex-credit-base">
+            <field name="code" ref="base_rep_ex"/>
+            <field name="tax" ref="iva_ex_rege_sale"/>
+            <field name="operator">-</field>
+            <field name="type">credit</field>
+            <field name="amount">base</field>
+        </record>
+    </data>
+</tryton>
