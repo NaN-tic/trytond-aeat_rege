@@ -1,7 +1,6 @@
 from trytond.model import fields
 from trytond.pool import Pool, PoolMeta
 from trytond.pyson import Bool, Eval
-from trytond.i18n import gettext
 
 
 class Invoice(metaclass=PoolMeta):
@@ -16,6 +15,25 @@ class Invoice(metaclass=PoolMeta):
         if not self.lines:
             return False
         return all([x.cost_price_show for x in self.lines])
+
+
+class SIIInvoice(metaclass=PoolMeta):
+    __name__ = 'account.invoice'
+
+    def _set_sii_keys(self):
+        pool = Pool()
+        Date = pool.get('ir.date')
+
+        super()._set_sii_keys()
+
+        if not self.company or not self.party or self.type == 'in':
+            return
+
+        date = self.accounting_date or self.invoice_date or Date.today()
+        party_rege = self.party.get_rege_by_date(date)
+        company_rege = self.company.party.get_rege_by_date(date)
+        if party_rege and company_rege and party_rege == company_rege:
+            self.sii_issued_key = '06'
 
 
 class InvoiceLine(metaclass=PoolMeta):
