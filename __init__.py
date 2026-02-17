@@ -14,6 +14,10 @@ def register():
         invoice.InvoiceLine,
         module='aeat_rege', type_='model')
     Pool.register(
+        invoice.SIIInvoice,
+        dependes=['aeat_sii'],
+        module='aeat_rege', type_='model')
+    Pool.register(
         module='aeat_rege', type_='wizard')
     Pool.register(
         module='aeat_rege', type_='report')
