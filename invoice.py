@@ -26,14 +26,17 @@ class SIIInvoice(metaclass=PoolMeta):
 
         super()._set_sii_keys()
 
-        if not self.company or not self.party or self.type == 'in':
+        if not self.company or not self.party:
             return
 
         date = self.accounting_date or self.invoice_date or Date.today()
         party_rege = self.party.get_rege_by_date(date)
         company_rege = self.company.party.get_rege_by_date(date)
         if party_rege and company_rege and party_rege == company_rege:
-            self.sii_issued_key = '06'
+            if self.type == 'out':
+                self.sii_issued_key = '06'
+            elif self.type == 'in':
+                self.sii_received_key = '06'
 
 
 class InvoiceLine(metaclass=PoolMeta):
