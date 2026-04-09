@@ -2,7 +2,7 @@
 # The COPYRIGHT file at the top level of this repository contains
 # the full copyright notices and license terms.
 from trytond.pool import Pool
-from . import rege, party, invoice
+from . import rege, party, invoice, aeat_mapping
 
 def register():
     Pool.register(
@@ -15,7 +15,9 @@ def register():
         module='aeat_rege', type_='model')
     Pool.register(
         invoice.SIIInvoice,
-        dependes=['aeat_sii'],
+        aeat_mapping.IssuedInvoiceMapper,
+        aeat_mapping.RecievedInvoiceMapper,
+        depends=['aeat_sii'],
         module='aeat_rege', type_='model')
     Pool.register(
         module='aeat_rege', type_='wizard')
