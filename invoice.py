@@ -80,7 +80,7 @@ class InvoiceLine(metaclass=PoolMeta):
         Date = Pool().get('ir.date')
 
         if (not self.company or not self.invoice_party or self.type != 'line'
-                or self.invoice_type == 'in' or not self.invoice):
+                or not self.invoice):
             return False
 
         date = (self.invoice.accounting_date or self.invoice.invoice_date
@@ -96,6 +96,8 @@ class InvoiceLine(metaclass=PoolMeta):
             return False
 
         if self.invoice_state != 'draft':
+            if self.invoice.type == "in":
+                return True
             return self.cost_price is not None
 
         return True
