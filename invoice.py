@@ -55,19 +55,6 @@ class InvoiceLine(metaclass=PoolMeta):
         fields.Boolean('Display Cost Price?'),
         'on_change_with_cost_price_show')
 
-    @property
-    def taxable_lines(self):
-        taxable_lines = super().taxable_lines
-
-        cost_price = getattr(self, 'cost_price', None) or 0
-        cost_price_show = getattr(self, 'cost_price_show', False)
-
-        if cost_price_show and taxable_lines:
-            line = list(taxable_lines[0])
-            line[1] -= cost_price
-            taxable_lines[0] = tuple(line)
-        return taxable_lines
-
     @fields.depends('product', '_parent_product.cost_price')
     def on_change_with_cost_price(self):
         if self.product:
