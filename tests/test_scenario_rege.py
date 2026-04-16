@@ -107,8 +107,8 @@ class Test(unittest.TestCase):
         self.assertEqual(line.cost_price, product.cost_price)
         self.assertEqual(line.amount, Decimal('10.00'))
         self.assertEqual(invoice.untaxed_amount, Decimal('10.00'))
-        self.assertEqual(invoice.tax_amount, Decimal('1.26'))
-        self.assertEqual(invoice.total_amount, Decimal('11.26'))
+        self.assertEqual(invoice.tax_amount, Decimal('2.10'))
+        self.assertEqual(invoice.total_amount, Decimal('12.10'))
 
         ## CASE 2
         # REGE with Normal
