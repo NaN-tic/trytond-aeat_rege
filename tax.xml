@@ -67,12 +67,12 @@ this repository contains the full copyright notices and license terms. -->
 
     <data depends="aeat_sii">
         <record model="account.tax.template" id="aeat_rege.iva_ex_rege_purchase">
-            <field name="sii_book_key">E</field>
+            <field name="sii_book_key">R</field>
             <field name="sii_received_key">06</field>
             <field name="sii_subjected_key">S1</field>
         </record>
         <record model="account.tax.template" id="aeat_rege.iva_ex_rege_sale">
-            <field name="sii_book_key">R</field>
+            <field name="sii_book_key">E</field>
             <field name="sii_issued_key">06</field>
             <field name="sii_subjected_key">S1</field>
         </record>
