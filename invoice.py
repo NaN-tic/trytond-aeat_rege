@@ -1,6 +1,10 @@
 from trytond.model import fields
 from trytond.pool import Pool, PoolMeta
 from trytond.pyson import Bool, Eval
+try:
+    from trytond.trytond.module.aeat_sii import _SII_INVOICE_KEYS
+except:
+    _SII_INVOICE_KEYS = []
 
 
 class Invoice(metaclass=PoolMeta):
@@ -26,7 +30,12 @@ class SIIInvoice(metaclass=PoolMeta):
 
         super()._set_sii_keys()
 
-        if not self.company or not self.party:
+        sii_keys_defined = False
+        for field in _SII_INVOICE_KEYS:
+            if getattr(self, field):
+                sii_keys_defined = True
+
+        if not sii_keys_defined or not self.company or not self.party:
             return
 
         date = self.accounting_date or self.invoice_date or Date.today()
