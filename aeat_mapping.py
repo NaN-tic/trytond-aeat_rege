@@ -10,10 +10,11 @@ class IssuedInvoiceMapper(metaclass=PoolMeta):
 
     def build_issued_invoice(self, invoice):
         ret = super().build_issued_invoice(invoice)
+        currency = invoice.currency
         if invoice and invoice.cost_price_show:
-            ret['BaseImponibleACoste'] = sum(
-                [l.cost_price * Decimal(str(l.quantity))
-                    for l in invoice.lines])
+            ret['BaseImponibleACoste'] = currency.round(sum(
+                    [l.cost_price * Decimal(str(l.quantity))
+                        for l in invoice.lines]))
         return ret
 
 
