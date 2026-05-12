@@ -1,7 +1,7 @@
 import unittest
 import datetime
 from decimal import Decimal
-from proteus import Model
+from proteus import Model, Wizard
 from trytond.tests.test_tryton import drop_db
 from trytond.tests.tools import activate_modules
 from trytond.modules.company.tests.tools import create_company, get_company
@@ -19,8 +19,10 @@ class Test(unittest.TestCase):
         drop_db()
 
     def test(self):
-        activate_modules(['aeat_rege', 'account_es'])
+        activate_modules(['aeat_rege', 'aeat_sii', 'account_es'])
 
+        AccountConfiguration = Model.get('account.configuration')
+        Certificate = Model.get('certificate')
         Invoice = Model.get('account.invoice')
         Rege = Model.get('aeat.rege')
         Party = Model.get('party.party')
@@ -36,9 +38,24 @@ class Test(unittest.TestCase):
             # Create a company
         create_company()
         company = get_company()
+        tax_identifier = company.party.identifiers.new()
+        tax_identifier.type = 'eu_vat'
+        tax_identifier.code = 'ES01234567L'
+        company.party.save()
+
+            # Enable SII
+        certificate = Certificate()
+        certificate.name = 'Dummy'
+        certificate.save()
+        account_config = AccountConfiguration(1)
+        account_config.aeat_certificate_sii = certificate
+        account_config.save()
 
             # Create customer party
         customer = Party(name='Customer')
+        tax_identifier = customer.identifiers.new()
+        tax_identifier.type = 'eu_vat'
+        tax_identifier.code = 'ES01234567L'
         customer.save()
 
             # Create fiscal year
@@ -119,6 +136,15 @@ class Test(unittest.TestCase):
         self.assertEqual(invoice.untaxed_amount, Decimal('10.00'))
         self.assertEqual(invoice.tax_amount, Decimal('2.10'))
         self.assertEqual(invoice.total_amount, Decimal('12.10'))
+        self.assertEqual(invoice.sii_issued_key, '06')
+
+        invoice.sii_issued_key = '01'
+        invoice.save()
+        invoice.reload()
+        reset_sii_keys = Wizard('aeat.sii.reset.keys', models=[invoice])
+        reset_sii_keys.execute('reset')
+        invoice.reload()
+        self.assertEqual(invoice.sii_issued_key, '06')
 
         invoice.click('validate_invoice')
         self.assertEqual(invoice.state, 'validated')
