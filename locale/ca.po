@@ -14,6 +14,14 @@ msgctxt "field:account.invoice.line,cost_price_show:"
 msgid "Display Cost Price?"
 msgstr "Mostrar el preu de cost?"
 
+msgctxt "field:account.invoice.tax,cost_price_amount:"
+msgid "Cost Price Amount"
+msgstr "Quota sobre preu de cost"
+
+msgctxt "field:account.invoice.tax,cost_price_amount_cache:"
+msgid "Cost Price Amount"
+msgstr "Quota sobre preu de cost"
+
 msgctxt "field:aeat.rege,active_member_count:"
 msgid "Active Members"
 msgstr "Membres actius"

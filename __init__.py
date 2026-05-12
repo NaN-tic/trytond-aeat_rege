@@ -12,6 +12,7 @@ def register():
         party.Party,
         invoice.Invoice,
         invoice.InvoiceLine,
+        invoice.InvoiceTax,
         module='aeat_rege', type_='model')
     Pool.register(
         invoice.SIIInvoice,

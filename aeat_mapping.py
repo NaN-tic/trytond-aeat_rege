@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 # The COPYRIGHT file at the top level of this repository contains the full
 # copyright notices and license terms.
-from trytond.pool import PoolMeta
 from decimal import Decimal
+from operator import attrgetter
+
+from trytond.pool import PoolMeta
 
 
 class IssuedInvoiceMapper(metaclass=PoolMeta):
@@ -12,17 +14,17 @@ class IssuedInvoiceMapper(metaclass=PoolMeta):
         ret = super().build_issued_invoice(invoice)
         currency = invoice.currency
         if invoice and invoice.cost_price_show:
-            cost = Decimal('0.0')
-            amount = Decimal('0.0')
-            for line in invoice.lines:
-                line_cost = currency.round(
-                    line.cost_price * Decimal(str(line.quantity)))
-                cost += line_cost
-                for tax in line.taxes:
-                    amount += currency.round(line_cost * tax.rate)
-            ret['BaseImponibleACoste'] = cost
-            ret['CuotaRepercutida'] = amount
+            ret['BaseImponibleACoste'] = currency.round(sum(
+                    [l.cost_price * Decimal(str(l.quantity))
+                        for l in invoice.lines]))
         return ret
+
+    def get_tax_amount(self, tax):
+        val = super().get_tax_amount(tax)
+        invoice = tax.invoice
+        if invoice and invoice.cost_price_show:
+            val = attrgetter('cost_price_amount')(tax)
+        return val
 
 
 class RecievedInvoiceMapper(metaclass=PoolMeta):
