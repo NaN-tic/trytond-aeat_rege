@@ -24,6 +24,7 @@ class Test(unittest.TestCase):
         Invoice = Model.get('account.invoice')
         Rege = Model.get('aeat.rege')
         Party = Model.get('party.party')
+        ProductCategory = Model.get('product.category')
         ProductUom = Model.get('product.uom')
         ProductTemplate = Model.get('product.template')
         Tax = Model.get('account.tax')
@@ -53,12 +54,21 @@ class Test(unittest.TestCase):
         tax = create_tax(Decimal('0.21'))
         tax.save()
 
+            # Create account category
+        account_category = ProductCategory(name='Account Category')
+        account_category.accounting = True
+        account_category.account_expense = accounts['expense']
+        account_category.account_revenue = accounts['revenue']
+        account_category.customer_taxes.append(tax)
+        account_category.save()
+
             # Find product uom
         unit, = ProductUom.find([('name', '=', 'Unit')])
 
             # Create a product template + variant
         template = ProductTemplate(name='Potato', default_uom=unit,
             type='goods', list_price=Decimal('10.00'))
+        template.account_category = account_category
         template.save()
         product, = template.products
         product.cost_price = Decimal('4.00')
@@ -109,6 +119,18 @@ class Test(unittest.TestCase):
         self.assertEqual(invoice.untaxed_amount, Decimal('10.00'))
         self.assertEqual(invoice.tax_amount, Decimal('2.10'))
         self.assertEqual(invoice.total_amount, Decimal('12.10'))
+
+        invoice.click('validate_invoice')
+        self.assertEqual(invoice.state, 'validated')
+        tax_line, = invoice.taxes
+        self.assertEqual(tax_line.cost_price_amount, Decimal('0.84'))
+        self.assertEqual(
+            tax_line.cost_price_amount_cache, tax_line.cost_price_amount)
+
+        invoice.click('draft')
+        self.assertEqual(invoice.state, 'draft')
+        tax_line, = invoice.taxes
+        self.assertEqual(tax_line.cost_price_amount_cache, None)
 
         ## CASE 2
         # REGE with Normal
