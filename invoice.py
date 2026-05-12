@@ -65,12 +65,7 @@ class SIIInvoice(metaclass=PoolMeta):
 
         super()._set_sii_keys()
 
-        sii_keys_defined = False
-        for field in _SII_INVOICE_KEYS:
-            if getattr(self, field):
-                sii_keys_defined = True
-
-        if not sii_keys_defined or not self.company or not self.party:
+        if not self.company or not self.party:
             return
 
         date = self.accounting_date or self.invoice_date or Date.today()
