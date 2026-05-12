@@ -12,9 +12,16 @@ class IssuedInvoiceMapper(metaclass=PoolMeta):
         ret = super().build_issued_invoice(invoice)
         currency = invoice.currency
         if invoice and invoice.cost_price_show:
-            ret['BaseImponibleACoste'] = currency.round(sum(
-                    [l.cost_price * Decimal(str(l.quantity))
-                        for l in invoice.lines]))
+            cost = Decimal('0.0')
+            amount = Decimal('0.0')
+            for line in invoice.lines:
+                line_cost = currency.round(
+                    line.cost_price * Decimal(str(line.quantity)))
+                cost += line_cost
+                for tax in line.taxes:
+                    amount += currency.round(line_cost * tax.rate)
+            ret['BaseImponibleACoste'] = cost
+            ret['CuotaRepercutida'] = amount
         return ret
 
 
