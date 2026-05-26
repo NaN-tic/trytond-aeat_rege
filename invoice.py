@@ -18,38 +18,6 @@ class Invoice(metaclass=PoolMeta):
             return False
         return all([x.cost_price_show for x in self.lines])
 
-    @classmethod
-    def _store_cache(cls, invoices):
-        InvoiceTax = Pool().get('account.invoice.tax')
-
-        tax_to_write = []
-        for invoice in invoices:
-            for tax in invoice.taxes:
-                tax_to_write.extend(([tax], {
-                    'cost_price_amount_cache': tax._get_cost_price_amount(
-                        invoice=invoice),
-                    }))
-
-        super()._store_cache(invoices)
-
-        if tax_to_write:
-            InvoiceTax.write(*tax_to_write)
-
-    @classmethod
-    def draft(cls, invoices):
-        InvoiceTax = Pool().get('account.invoice.tax')
-
-        taxes = []
-        for invoice in invoices:
-            taxes.extend(list(invoice.taxes or []))
-
-        super().draft(invoices)
-
-        if taxes:
-            InvoiceTax.write(taxes, {
-                'cost_price_amount_cache': None,
-                })
-
 
 class SIIInvoice(metaclass=PoolMeta):
     __name__ = 'account.invoice'
