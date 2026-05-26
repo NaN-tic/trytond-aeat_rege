@@ -3,11 +3,6 @@ from decimal import Decimal
 from trytond.model import fields
 from trytond.pool import Pool, PoolMeta
 from trytond.pyson import Bool, Eval
-from trytond.modules.currency.fields import Monetary
-try:
-    from trytond.trytond.module.aeat_sii import _SII_INVOICE_KEYS
-except:
-    _SII_INVOICE_KEYS = []
 
 
 class Invoice(metaclass=PoolMeta):
@@ -137,44 +132,39 @@ class InvoiceLine(metaclass=PoolMeta):
 class InvoiceTax(metaclass=PoolMeta):
     __name__ = 'account.invoice.tax'
 
-    cost_price_amount = fields.Function(Monetary('Cost Price Amount',
-            digits='currency', currency='currency'),
-        'get_cost_price_amount')
-    cost_price_amount_cache = Monetary('Cost Price Amount',
-        digits='currency', currency='currency', readonly=True)
+    cost_price = fields.Function(fields.Numeric('Cost Price',
+            digits='currency'),
+        'on_change_with_cost_price')
+    cost_price_show = fields.Function(
+        fields.Boolean('Display Cost Price?'),
+        'on_change_with_cost_price_show')
 
-    @classmethod
-    def __setup__(cls):
-        super().__setup__()
-        cls._check_modify_exclude |= {'cost_price_amount_cache'}
+    def _get_cost_price_lines(self):
+        if not self.invoice or not self.tax:
+            return []
+        InvoiceLine = Pool().get('account.invoice.line')
+        return InvoiceLine.search([
+                ('invoice', '=', self.invoice.id),
+                ('type', '=', 'line'),
+                ('taxes', '=', self.tax.id),
+                ])
 
-    @classmethod
-    def copy(cls, taxes, default=None):
-        if default is None:
-            default = {}
-        default = default.copy()
-        default['cost_price_amount_cache'] = None
-        return super().copy(taxes, default=default)
+    @fields.depends('invoice', '_parent_invoice.cost_price_show')
+    def on_change_with_cost_price_show(self, name=None):
+        if self.invoice:
+            return self.invoice.cost_price_show
+        return False
 
-    def get_cost_price_amount(self, name=None):
-        if self.cost_price_amount_cache is not None:
-            return self.cost_price_amount_cache
+    @fields.depends('invoice', 'tax', '_parent_invoice.lines',
+        '_parent_invoice.currency')
+    def on_change_with_cost_price(self, name=None):
+        if not self.invoice or not self.tax or not self.cost_price_show:
+            return
 
-        return self._get_cost_price_amount()
-
-    def _get_cost_price_amount(self, invoice=None):
-        amount = Decimal('0.0')
-        invoice = invoice or self.invoice or getattr(self, '_parent_invoice',
-            None)
-        currency = invoice.currency if invoice else None
-        tax = self.tax
-        if not invoice or not currency or not tax:
-            return amount
-
-        for line in invoice.lines:
-            if (line.type != 'line' or line.cost_price is None
-                    or tax not in line.taxes):
-                continue
-            amount += (
-                line.cost_price * Decimal(str(line.quantity)) * tax.rate)
-        return currency.round(amount)
+        cost_price = Decimal(0)
+        for line in self._get_cost_price_lines():
+            cost_price += ((line.cost_price or Decimal(0))
+                * Decimal(str(line.quantity or 0)))
+        if self.invoice.currency:
+            return self.invoice.currency.round(cost_price)
+        return cost_price
