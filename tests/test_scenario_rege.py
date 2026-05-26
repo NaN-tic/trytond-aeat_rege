@@ -149,14 +149,13 @@ class Test(unittest.TestCase):
         invoice.click('validate_invoice')
         self.assertEqual(invoice.state, 'validated')
         tax_line, = invoice.taxes
-        self.assertEqual(tax_line.cost_price_amount, Decimal('0.84'))
-        self.assertEqual(
-            tax_line.cost_price_amount_cache, tax_line.cost_price_amount)
+        self.assertEqual(tax_line.cost_price_show, True)
+        self.assertEqual(tax_line.cost_price, Decimal('4.00'))
 
         invoice.click('draft')
         self.assertEqual(invoice.state, 'draft')
         tax_line, = invoice.taxes
-        self.assertEqual(tax_line.cost_price_amount_cache, None)
+        self.assertEqual(tax_line.cost_price, Decimal('4.00'))
 
         ## CASE 2
         # REGE with Normal
