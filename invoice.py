@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from trytond.model import fields
 from trytond.pool import Pool, PoolMeta
 from trytond.pyson import Bool, Eval
@@ -55,19 +57,6 @@ class InvoiceLine(metaclass=PoolMeta):
         fields.Boolean('Display Cost Price?'),
         'on_change_with_cost_price_show')
 
-    @property
-    def taxable_lines(self):
-        taxable_lines = super().taxable_lines
-
-        cost_price = getattr(self, 'cost_price', None) or 0
-        cost_price_show = getattr(self, 'cost_price_show', False)
-
-        if cost_price_show and taxable_lines:
-            line = list(taxable_lines[0])
-            line[1] -= cost_price
-            taxable_lines[0] = tuple(line)
-        return taxable_lines
-
     @fields.depends('product', '_parent_product.cost_price')
     def on_change_with_cost_price(self):
         if self.product:
@@ -106,3 +95,44 @@ class InvoiceLine(metaclass=PoolMeta):
         line = super()._credit()
         line.cost_price = self.cost_price
         return line
+
+
+class InvoiceTax(metaclass=PoolMeta):
+    __name__ = 'account.invoice.tax'
+
+    cost_price = fields.Function(fields.Numeric('Cost Price',
+            digits='currency'),
+        'on_change_with_cost_price')
+    cost_price_show = fields.Function(
+        fields.Boolean('Display Cost Price?'),
+        'on_change_with_cost_price_show')
+
+    def _get_cost_price_lines(self):
+        if not self.invoice or not self.tax:
+            return []
+        InvoiceLine = Pool().get('account.invoice.line')
+        return InvoiceLine.search([
+                ('invoice', '=', self.invoice.id),
+                ('type', '=', 'line'),
+                ('taxes', '=', self.tax.id),
+                ])
+
+    @fields.depends('invoice', '_parent_invoice.cost_price_show')
+    def on_change_with_cost_price_show(self, name=None):
+        if self.invoice:
+            return self.invoice.cost_price_show
+        return False
+
+    @fields.depends('invoice', 'tax', '_parent_invoice.lines',
+        '_parent_invoice.currency')
+    def on_change_with_cost_price(self, name=None):
+        if not self.invoice or not self.tax or not self.cost_price_show:
+            return
+
+        cost_price = Decimal(0)
+        for line in self._get_cost_price_lines():
+            cost_price += ((line.cost_price or Decimal(0))
+                * Decimal(str(line.quantity or 0)))
+        if self.invoice.currency:
+            return self.invoice.currency.round(cost_price)
+        return cost_price
