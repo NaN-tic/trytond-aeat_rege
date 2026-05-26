@@ -2,9 +2,8 @@
 # The COPYRIGHT file at the top level of this repository contains the full
 # copyright notices and license terms.
 from decimal import Decimal
-from operator import attrgetter
 
-from trytond.pool import PoolMeta
+from trytond.pool import Pool, PoolMeta
 
 
 class IssuedInvoiceMapper(metaclass=PoolMeta):
@@ -12,19 +11,35 @@ class IssuedInvoiceMapper(metaclass=PoolMeta):
 
     def build_issued_invoice(self, invoice):
         ret = super().build_issued_invoice(invoice)
+
         currency = invoice.currency
         if invoice and invoice.cost_price_show:
-            ret['BaseImponibleACoste'] = currency.round(sum(
-                    [l.cost_price * Decimal(str(l.quantity))
-                        for l in invoice.lines]))
+            cost = Decimal('0.0')
+            for line in invoice.lines:
+                cost += currency.round(
+                    line.cost_price * Decimal(str(line.quantity)))
+            if invoice.currency:
+                cost = invoice.currency.round(cost)
+            ret['BaseImponibleACoste'] = cost
         return ret
 
-    def get_tax_amount(self, tax):
-        val = super().get_tax_amount(tax)
-        invoice = tax.invoice
-        if invoice and invoice.cost_price_show:
-            val = attrgetter('cost_price_amount')(tax)
-        return val
+    def build_taxes(self, tax):
+        pool = Pool()
+        Tax = pool.get('account.tax')
+
+        res = super().build_taxes(tax)
+
+        if tax.cost_price_show and 'CuotaRepercutida' in res:
+            tax_date = tax.invoice.tax_date
+            value, = Tax.compute([tax.tax], tax.cost_price, 1, tax_date)
+            amount = 0
+            if (value['tax'] == tax.tax
+                    and value['base'] == tax.cost_price):
+                amount = value['amount']
+                if tax.invoice.currency:
+                    amount = tax.invoice.currency.round(amount)
+            res['CuotaRepercutida'] = amount
+        return res
 
 
 class RecievedInvoiceMapper(metaclass=PoolMeta):
