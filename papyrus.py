@@ -4,18 +4,18 @@
 from trytond.pool import Pool, PoolMeta
 
 
-class Document(metaclass=PoolMeta):
-    __name__ = 'papyrus.document'
+class Invoice(metaclass=PoolMeta):
+    __name__ = 'account.invoice'
 
-    def create_invoice_lines_from_papyrus_lines(self, invoice):
+    def create_invoice_lines_from_papyrus_lines(self):
         existing_lines = {
-            id(line) for line in invoice.papyrus_lines if line.invoice_line}
+            id(line) for line in self.papyrus_lines if line.invoice_line}
 
-        super().create_invoice_lines_from_papyrus_lines(invoice)
+        super().create_invoice_lines_from_papyrus_lines()
 
         InvoiceLine = Pool().get('account.invoice.line')
         to_write = []
-        for papyrus_line in invoice.papyrus_lines:
+        for papyrus_line in self.papyrus_lines:
             if id(papyrus_line) in existing_lines:
                 continue
             line = papyrus_line.invoice_line
