@@ -5,5 +5,7 @@ this repository contains the full copyright notices and license terms. -->
     <xpath expr="/form/notebook/page[@id='general']/field[@name='amount']" position="after">
         <label name="cost_price"/>
         <field name="cost_price"/>
+        <label name="rege_cost_base_exclude"/>
+        <field name="rege_cost_base_exclude"/>
     </xpath>
 </data>
