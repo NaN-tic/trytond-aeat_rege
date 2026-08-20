@@ -16,6 +16,8 @@ class IssuedInvoiceMapper(metaclass=PoolMeta):
         if invoice and invoice.cost_price_show:
             cost = Decimal('0.0')
             for line in invoice.lines:
+                if line.rege_cost_base_exclude:
+                    continue
                 cost += currency.round(
                     line.cost_price * Decimal(str(line.quantity)))
             if invoice.currency:
@@ -48,16 +50,5 @@ class RecievedInvoiceMapper(metaclass=PoolMeta):
     def build_received_invoice(self, invoice):
         ret = super().build_received_invoice(invoice)
         if invoice and invoice.cost_price_show:
-            if any(line.taxes_deductible_rate is not None
-                    and line.taxes_deductible_rate != 1
-                    for line in invoice.lines):
-                cost = Decimal('0.0')
-                for line in invoice.lines:
-                    cost += ((line.cost_price or Decimal('0'))
-                        * Decimal(str(line.quantity or 0)))
-                if invoice.currency:
-                    cost = invoice.currency.round(cost)
-                ret['BaseImponibleACoste'] = cost
-            else:
-                ret['BaseImponibleACoste'] = invoice.company_untaxed_amount
+            ret['BaseImponibleACoste'] = invoice.get_rege_received_cost_base()
         return ret

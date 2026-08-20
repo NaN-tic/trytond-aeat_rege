@@ -14,6 +14,18 @@ msgctxt "field:account.invoice.line,cost_price_show:"
 msgid "Display Cost Price?"
 msgstr "¿Mostrar precio de coste?"
 
+msgctxt "field:account.invoice.line,rege_cost_base_exclude:"
+msgid "Exclude from REGE Cost Base"
+msgstr "Excluir de la base a coste REGE"
+
+msgctxt "field:account.tax,rege_cost_base_exclude:"
+msgid "Exclude from REGE Cost Base by Default"
+msgstr "Excluir por defecto de la base a coste REGE"
+
+msgctxt "field:account.tax.template,rege_cost_base_exclude:"
+msgid "Exclude from REGE Cost Base by Default"
+msgstr "Excluir por defecto de la base a coste REGE"
+
 msgctxt "field:account.invoice.tax,cost_price:"
 msgid "Cost Price"
 msgstr "Precio de coste"
@@ -21,6 +33,18 @@ msgstr "Precio de coste"
 msgctxt "field:account.invoice.tax,cost_price_show:"
 msgid "Display Cost Price?"
 msgstr "¿Mostrar precio de coste?"
+
+msgctxt "model:ir.message,text:aeat_rege.msg_legal_notice_tax:"
+msgid "Special regime for groups of entities, article 163 octies of VAT Law 37/1992."
+msgstr "Régimen especial del grupo de entidades, artículo 163 octies de la Ley 37/1992 del IVA."
+
+msgctxt "model:ir.message,text:aeat_rege.msg_invoice_in_rege_cost_base_zero:"
+msgid "The following supplier REGE invoices have a base at cost of zero: %(invoices)s."
+msgstr "Las siguientes facturas de proveedor REGE tienen una base a coste cero: %(invoices)s."
+
+msgctxt "model:ir.message,text:aeat_rege.msg_invoice_rege_cost_base_excluded:"
+msgid "Review the lines excluded from the REGE cost base on the following invoices: %(invoices)s. Exclude only own work or margin; costs for materials and services provided by third parties must be included."
+msgstr "Revise las líneas excluidas de la base a coste REGE de las siguientes facturas: %(invoices)s. Excluya solo el trabajo propio o el margen; deben incluirse los costes de materiales y de servicios prestados por terceros."
 
 msgctxt "field:aeat.rege,active_member_count:"
 msgid "Active Members"
@@ -99,6 +123,18 @@ msgstr ""
 "Disponible sólo si la “Compañía” y el “Tercero” comparten el mismo REGE de "
 "tipo \"Avanzado\"; se utiliza para cálculos de impuestos y tiene como valor "
 "predeterminado el precio de coste del producto."
+
+msgctxt "help:account.invoice.line,rege_cost_base_exclude:"
+msgid "Use this field only for own work or margin. Include costs for materials and services provided by third parties."
+msgstr "Utilice este campo solo para el trabajo propio o el margen. Incluya los costes de materiales y de servicios prestados por terceros."
+
+msgctxt "help:account.tax,rege_cost_base_exclude:"
+msgid "Lines using this tax are excluded from the REGE cost base by default. Review the value on each invoice line: costs for materials and third-party services must be included."
+msgstr "Las líneas con este impuesto se excluyen por defecto de la base a coste REGE. Revise el valor de cada línea de factura: deben incluirse los costes de materiales y de servicios de terceros."
+
+msgctxt "help:account.tax.template,rege_cost_base_exclude:"
+msgid "Lines using this tax are excluded from the REGE cost base by default. Review the value on each invoice line: costs for materials and third-party services must be included."
+msgstr "Las líneas con este impuesto se excluyen por defecto de la base a coste REGE. Revise el valor de cada línea de factura: deben incluirse los costes de materiales y de servicios de terceros."
 
 msgctxt "help:aeat.rege,active_member_count:"
 msgid "Total number of parties currently registered."
