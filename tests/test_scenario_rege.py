@@ -2,6 +2,7 @@ import unittest
 import datetime
 from decimal import Decimal
 from proteus import Model, Wizard
+from trytond.exceptions import UserWarning
 from trytond.tests.test_tryton import drop_db
 from trytond.tests.tools import activate_modules
 from trytond.modules.company.tests.tools import create_company, get_company
@@ -67,9 +68,15 @@ class Test(unittest.TestCase):
         create_chart(company)
         accounts = get_accounts(company)
 
-            # Create tax
+        # Create tax
         tax = create_tax(Decimal('0.21'))
+        tax.legal_notice = 'Existing legal notice'
         tax.save()
+        second_tax = create_tax(Decimal('0.10'))
+        second_tax.save()
+        excluded_cost_tax = create_tax(Decimal('0.00'))
+        excluded_cost_tax.rege_cost_base_exclude = True
+        excluded_cost_tax.save()
 
             # Create account category
         account_category = ProductCategory(name='Account Category')
@@ -128,15 +135,23 @@ class Test(unittest.TestCase):
         line.unit_price = Decimal('10.00')
         line.account = accounts['revenue']
         line.taxes.append(Tax(tax.id))
+        line.taxes.append(Tax(second_tax.id))
         line.save()
 
         self.assertTrue(line.cost_price_show)
         self.assertEqual(line.cost_price, product.cost_price)
         self.assertEqual(line.amount, Decimal('10.00'))
         self.assertEqual(invoice.untaxed_amount, Decimal('10.00'))
-        self.assertEqual(invoice.tax_amount, Decimal('2.10'))
-        self.assertEqual(invoice.total_amount, Decimal('12.10'))
+        self.assertEqual(invoice.tax_amount, Decimal('3.10'))
+        self.assertEqual(invoice.total_amount, Decimal('13.10'))
         self.assertEqual(invoice.sii_issued_key, '06')
+        legal_notice = ('Special regime for groups of entities, article 163 '
+            'octies of VAT Law 37/1992.')
+        rege_taxes = [tax for tax in invoice.taxes
+            if legal_notice in (tax.legal_notice or '').split('\n')]
+        self.assertEqual(len(rege_taxes), 1)
+        self.assertEqual(rege_taxes[0].legal_notice, '\n'.join([
+                'Existing legal notice', legal_notice]))
 
         invoice.sii_issued_key = '01'
         invoice.save()
@@ -148,14 +163,60 @@ class Test(unittest.TestCase):
 
         invoice.click('validate_invoice')
         self.assertEqual(invoice.state, 'validated')
-        tax_line, = invoice.taxes
+        tax_line, = [tax_line for tax_line in invoice.taxes
+            if tax_line.tax.id == tax.id]
         self.assertEqual(tax_line.cost_price_show, True)
         self.assertEqual(tax_line.cost_price, Decimal('4.00'))
 
         invoice.click('draft')
         self.assertEqual(invoice.state, 'draft')
-        tax_line, = invoice.taxes
+        tax_line, = [tax_line for tax_line in invoice.taxes
+            if tax_line.tax.id == tax.id]
         self.assertEqual(tax_line.cost_price, Decimal('4.00'))
+
+        # The tax default may be overridden for each REGE invoice line.
+        invoice = base_invoice()
+        invoice.accounting_date = today
+        invoice.save()
+
+        line = invoice.lines.new()
+        line.type = 'line'
+        line.product = product
+        line.quantity = 1
+        line.unit_price = Decimal('10.00')
+        line.account = accounts['revenue']
+        line.taxes.append(Tax(excluded_cost_tax.id))
+        line.save()
+
+        line._on_change(['taxes'])
+        self.assertTrue(line.rege_cost_base_exclude)
+        line.rege_cost_base_exclude = False
+        line.save()
+        self.assertFalse(line.rege_cost_base_exclude)
+        line.rege_cost_base_exclude = True
+        line.save()
+        self.assertTrue(line.rege_cost_base_exclude)
+        with self.assertRaises(UserWarning):
+            invoice.click('post')
+
+        # Supplier REGE invoice with a base at cost of zero
+        invoice = Invoice(party=customer, company=company, type='in')
+        invoice.accounting_date = today
+        invoice.save()
+
+        line = invoice.lines.new()
+        line.type = 'line'
+        line.product = product
+        line.quantity = 1
+        line.unit_price = Decimal('10.00')
+        line.cost_price = Decimal(0)
+        line.taxes_deductible_rate = Decimal(0)
+        line.account = accounts['expense']
+        line.taxes.append(Tax(tax.id))
+        line.save()
+
+        with self.assertRaises(UserWarning):
+            invoice.click('post')
 
         ## CASE 2
         # REGE with Normal

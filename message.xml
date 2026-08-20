@@ -18,5 +18,14 @@ this repository contains the full copyright notices and license terms. -->
         <record model="ir.message" id="msg_membership_overlap">
             <field name="text">The membership "%(main)s" overlaps with the following membership(s): "%(member)s". Please adjust the date ranges to avoid overlap.</field>
         </record>
+        <record model="ir.message" id="msg_legal_notice_tax">
+            <field name="text">Special regime for groups of entities, article 163 octies of VAT Law 37/1992.</field>
+        </record>
+        <record model="ir.message" id="msg_invoice_in_rege_cost_base_zero">
+            <field name="text">The following supplier REGE invoices have a base at cost of zero: %(invoices)s.</field>
+        </record>
+        <record model="ir.message" id="msg_invoice_rege_cost_base_excluded">
+            <field name="text">Review the lines excluded from the REGE cost base on the following invoices: %(invoices)s. Exclude only own work or margin; costs for materials and services provided by third parties must be included.</field>
+        </record>
     </data>
 </tryton>
