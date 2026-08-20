@@ -1,7 +1,7 @@
 import unittest
 import datetime
 from decimal import Decimal
-from proteus import Model, Wizard
+from proteus import Model, Wizard, config
 from trytond.exceptions import UserWarning
 from trytond.tests.test_tryton import drop_db
 from trytond.tests.tools import activate_modules
@@ -31,6 +31,7 @@ class Test(unittest.TestCase):
         ProductUom = Model.get('product.uom')
         ProductTemplate = Model.get('product.template')
         Tax = Model.get('account.tax')
+        Warning = Model.get('res.user.warning')
 
         today = datetime.date.today()
         yesterday = today - datetime.timedelta(days=1)
@@ -161,6 +162,10 @@ class Test(unittest.TestCase):
         invoice.reload()
         self.assertEqual(invoice.sii_issued_key, '06')
 
+        with self.assertRaises(UserWarning) as caught:
+            invoice.click('validate_invoice')
+        _, (key, *_) = caught.exception.args
+        Warning.skip(key, True, config.get_config().context)
         invoice.click('validate_invoice')
         self.assertEqual(invoice.state, 'validated')
         tax_line, = [tax_line for tax_line in invoice.taxes
