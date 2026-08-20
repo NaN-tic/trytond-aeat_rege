@@ -20,7 +20,7 @@ class Test(unittest.TestCase):
         drop_db()
 
     def test(self):
-        activate_modules(['aeat_rege', 'aeat_sii', 'account_es'])
+        config = activate_modules(['aeat_rege', 'aeat_sii', 'account_es'])
 
         AccountConfiguration = Model.get('account.configuration')
         Certificate = Model.get('certificate')
@@ -161,6 +161,14 @@ class Test(unittest.TestCase):
         invoice.reload()
         self.assertEqual(invoice.sii_issued_key, '06')
 
+        with self.assertRaises(UserWarning):
+            try:
+                invoice.click('validate_invoice')
+            except UserWarning as warning:
+                _, (key, *_) = warning.args
+                raise
+        Warning = Model.get('res.user.warning')
+        Warning.skip(key, True, config.context)
         invoice.click('validate_invoice')
         self.assertEqual(invoice.state, 'validated')
         tax_line, = [tax_line for tax_line in invoice.taxes
