@@ -17,7 +17,7 @@ def register():
         tax.Tax,
         module='aeat_rege', type_='model')
     Pool.register(
-        papyrus.Document,
+        papyrus.Invoice,
         depends=['papyrus_model'],
         module='aeat_rege', type_='model')
     Pool.register(
