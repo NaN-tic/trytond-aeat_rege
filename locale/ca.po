@@ -34,15 +34,15 @@ msgctxt "field:account.invoice.tax,cost_price_show:"
 msgid "Display Cost Price?"
 msgstr "Mostrar el preu de cost?"
 
-msgctxt "model:ir.message,text:msg_legal_notice_tax:"
+msgctxt "model:ir.message,text:msg_legal_notice_tax"
 msgid "Special regime for groups of entities, article 163 octies of VAT Law 37/1992."
 msgstr "Règim especial del grup d'entitats, article 163 octies de la Llei 37/1992 de l'IVA."
 
-msgctxt "model:ir.message,text:msg_invoice_in_rege_cost_base_zero:"
+msgctxt "model:ir.message,text:msg_invoice_in_rege_cost_base_zero"
 msgid "The following supplier REGE invoices have a base at cost of zero: %(invoices)s."
 msgstr "Les factures de proveïdor REGE següents tenen una base a cost zero: %(invoices)s."
 
-msgctxt "model:ir.message,text:msg_invoice_rege_cost_base_excluded:"
+msgctxt "model:ir.message,text:msg_invoice_rege_cost_base_excluded"
 msgid "Review the lines excluded from the REGE cost base on the following invoices: %(invoices)s. Exclude only own work or margin; costs for materials and services provided by third parties must be included."
 msgstr "Reviseu les línies excloses de la base a cost REGE de les factures següents: %(invoices)s. Excloeu-ne només el treball propi o el marge; cal incloure-hi els costos de materials i de serveis prestats per tercers."
 
