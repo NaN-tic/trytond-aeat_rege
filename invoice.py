@@ -188,7 +188,7 @@ class InvoiceLine(metaclass=PoolMeta):
             return False
 
         if self.invoice_state != 'draft':
-            if self.invoice.type == "in":
+            if self.invoice_type == 'in':
                 return True
             return self.cost_price is not None
 
