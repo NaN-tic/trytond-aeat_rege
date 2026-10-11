@@ -3,6 +3,9 @@
 this repository contains the full copyright notices and license terms. -->
 <tryton>
     <data grouped="1">
+        <record model="ir.message" id="msg_retired_tax">
+            <field name="text">The legacy REGE tax "%(tax)s" on invoice "%(invoice)s" expired on %(date)s. Select the VAT tax applicable to the operation and enter the REGE cost separately. Review product taxes and tax rules if this tax was selected automatically.</field>
+        </record>
         <record model="ir.message" id="msg_report_general_base">
             <field name="text">General VAT base (articles 78 and 79)</field>
         </record>

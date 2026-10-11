@@ -7,6 +7,8 @@ from trytond.pool import Pool, PoolMeta
 from trytond.pyson import Bool, Eval
 from trytond.transaction import Transaction
 
+from .tax import LEGACY_REGE_END_DATE
+
 
 class Invoice(metaclass=PoolMeta):
     __name__ = 'account.invoice'
@@ -120,6 +122,7 @@ class Invoice(metaclass=PoolMeta):
     @classmethod
     def _prepare_rege(cls, invoices):
         for invoice in invoices:
+            invoice._check_legacy_rege_taxes()
             if invoice.state == 'draft' and not invoice.number:
                 invoice._set_rege_journal()
                 invoice.save()
@@ -139,6 +142,29 @@ class Invoice(metaclass=PoolMeta):
                             raise UserError(gettext('aeat_rege.msg_waiver_tax',
                                     invoice=invoice.rec_name))
                 invoice._rege_sequence()
+
+    def _check_legacy_rege_taxes(self):
+        if self.state not in ('draft', 'validated'):
+            return
+        taxes_dates = [(tax, line.tax_date)
+            for line in self.lines if line.type == 'line'
+            for tax in line.taxes]
+        taxes_dates.extend((tax.tax, self.tax_date)
+            for tax in self.taxes if tax.tax)
+        seen = set()
+        while taxes_dates:
+            tax, tax_date = taxes_dates.pop()
+            if (tax.id, tax_date) in seen:
+                continue
+            seen.add((tax.id, tax_date))
+            taxes_dates.extend((child, tax_date) for child in tax.childs)
+            if tax.rege_legacy:
+                end_date = min(tax.end_date or LEGACY_REGE_END_DATE,
+                    LEGACY_REGE_END_DATE)
+                if tax_date > end_date:
+                    raise UserError(gettext('aeat_rege.msg_retired_tax',
+                            invoice=self.rec_name, tax=tax.rec_name,
+                            date=str(end_date)))
 
     @classmethod
     def validate_invoice(cls, invoices):

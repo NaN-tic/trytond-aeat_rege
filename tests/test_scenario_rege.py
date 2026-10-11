@@ -126,10 +126,10 @@ class Test(unittest.TestCase):
         period_advanced.type = 'advanced'
         period_advanced.start_date = today
         period_advanced.save()
-        period_normal = rege.periods.new()
-        period_normal.type = 'normal'
-        period_normal.end_date = yesterday
-        period_normal.save()
+        period_basic = rege.periods.new()
+        period_basic.type = 'normal'
+        period_basic.end_date = yesterday
+        period_basic.save()
         rege.save()
 
             # Link REGE with both parties
@@ -289,7 +289,7 @@ class Test(unittest.TestCase):
             invoice.click('post')
 
         ## CASE 2
-        # REGE with Normal
+        # REGE with Basic
         invoice = base_invoice()
         invoice.accounting_date = yesterday
         invoice.save()

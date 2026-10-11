@@ -3,6 +3,9 @@ aeat_rege
 
 The aeat_rege module of the Tryton application platform.
 
+Regime levels are named Basic and Advanced. The stored key for Basic remains
+``normal`` for compatibility with existing periods and integrations.
+
 Advanced REGE invoicing
 -----------------------
 
@@ -59,6 +62,27 @@ Reference: https://sede.agenciatributaria.gob.es/Sede/impuestos-tasas/iva/iva-li
 
 Upgrade notes
 -------------
+
+The legacy REGE exemption purchase/sale taxes expire on 2026-09-30 (inclusive).
+On module upgrade, taxes linked to the former REGE templates are marked as
+legacy, detached from their templates and given that end date. An earlier
+existing end date is preserved. The removed XML templates and their tax-code
+line templates are deleted by Tryton's module update. Existing business taxes,
+tax-code lines and invoice/move references remain available for historical use.
+This migration is idempotent and applies across companies.
+
+Validation and numbering reject legacy taxes after their end date, including
+taxes assigned by products/rules or manual invoice tax rows. Update those
+defaults to the VAT tax applicable to the operation. No new legacy taxes are
+created by chart installation. Copies without a link to the original templates
+must be reviewed separately; taxes are not identified by their translated name.
+
+For the headphones example, enter commercial prices 85.96 and 8.60, REGE costs
+85.96 and 0.00, the ordinary 21% purchase VAT on both lines and a deductible
+rate of 0 for the recipient. The result is 112.61 payable, 18.05 VAT incurred
+and zero deductible VAT. SII reports key 06, general base 94.56, cost base
+85.96 and VAT rate 21%; it does not report an E6 exemption or a zero-rate line.
+The upgrade does not amend posted invoices or resend SII records.
 
 Update aeat_rege and cediv, configure the group journals and fiscal-year
 sequences, then review draft invoices before posting. Costs previously filled

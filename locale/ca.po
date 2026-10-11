@@ -22,6 +22,18 @@ msgctxt "field:account.tax,rege_cost_base_exclude:"
 msgid "Exclude from REGE Cost Base by Default"
 msgstr "Excloure per defecte de la base a cost REGE"
 
+msgctxt "field:account.tax,rege_legacy:"
+msgid "Legacy REGE Exemption Tax"
+msgstr "Impost d'exempció REGE antic"
+
+msgctxt "help:account.tax,rege_legacy:"
+msgid "Historical REGE zero-rate tax retired on 30 September 2026."
+msgstr "Impost REGE històric al tipus zero retirat el 30 de setembre de 2026."
+
+msgctxt "model:ir.message,text:msg_retired_tax"
+msgid "The legacy REGE tax \"%(tax)s\" on invoice \"%(invoice)s\" expired on %(date)s. Select the VAT tax applicable to the operation and enter the REGE cost separately. Review product taxes and tax rules if this tax was selected automatically."
+msgstr "L'impost REGE antic \"%(tax)s\" de la factura \"%(invoice)s\" va caducar el %(date)s. Seleccioneu l'impost d'IVA aplicable a l'operació i indiqueu el cost REGE per separat. Reviseu els impostos dels productes i les regles d'impostos si s'ha seleccionat automàticament."
+
 msgctxt "field:account.tax.template,rege_cost_base_exclude:"
 msgid "Exclude from REGE Cost Base by Default"
 msgstr "Excloure per defecte de la base a cost REGE"
@@ -284,8 +296,8 @@ msgid "Advanced"
 msgstr "Avançat"
 
 msgctxt "selection:aeat.rege,current_type:"
-msgid "Normal"
-msgstr "Normal"
+msgid "Basic"
+msgstr "Bàsic"
 
 msgctxt "selection:aeat.rege.period,state:"
 msgid "Closed"
@@ -304,8 +316,8 @@ msgid "Advanced"
 msgstr "Avançat"
 
 msgctxt "selection:aeat.rege.period,type:"
-msgid "Normal"
-msgstr "Normal"
+msgid "Basic"
+msgstr "Bàsic"
 
 msgctxt "view:aeat.rege:"
 msgid "Members"

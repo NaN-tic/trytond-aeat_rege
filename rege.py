@@ -34,7 +34,7 @@ class REGE(ModelView, ModelSQL):
         'get_active_member_count')
     current_type = fields.Function(
         fields.Selection([
-            ('normal', 'Normal'),
+            ('normal', 'Basic'),
             ('advanced', 'Advanced'),
             ], 'Current Type',
             help='Tax regime of the currently open period.',
@@ -90,10 +90,11 @@ class REGEPeriod(ModelView, ModelSQL):
         help='REGE to which this period belongs.',
         required=True, ondelete='CASCADE')
     type = fields.Selection([
-        ('normal', 'Normal'),
+        ('normal', 'Basic'),
         ('advanced', 'Advanced'),
         ], 'Type', help='Tax regime applied during the period.',
         required=True)
+    type_string = type.translated('type')
     start_date = fields.Date('Starting Date',
         help='Start date of the period; leave empty for no lower limit.',
         domain=[If(
@@ -142,7 +143,7 @@ class REGEPeriod(ModelView, ModelSQL):
     def get_rec_name(self, name):
         start_date = str(self.start_date or INFINITY_CHAR).replace('-', '/')
         end_date = str(self.end_date or INFINITY_CHAR).replace('-', '/')
-        type = (self.type or '').capitalize()
+        type = self.type_string or ''
         return f'{start_date} - {end_date} ({type})'
 
     @fields.depends('start_date', 'end_date')
