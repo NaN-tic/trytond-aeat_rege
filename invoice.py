@@ -1,10 +1,11 @@
 from decimal import Decimal
 
 from trytond.i18n import gettext
-from trytond.exceptions import UserWarning
+from trytond.exceptions import UserError, UserWarning
 from trytond.model import fields
 from trytond.pool import Pool, PoolMeta
 from trytond.pyson import Bool, Eval
+from trytond.transaction import Transaction
 
 
 class Invoice(metaclass=PoolMeta):
@@ -14,39 +15,210 @@ class Invoice(metaclass=PoolMeta):
         fields.Boolean('Display Cost Price?'),
         'on_change_with_cost_price_show')
 
-    @fields.depends('lines')
+    @fields.depends('company', 'party', 'invoice_date', 'accounting_date')
     def on_change_with_cost_price_show(self, name=None):
-        if not self.lines:
-            return False
-        return all([x.cost_price_show for x in self.lines])
+        return bool(self._get_rege(advanced=True))
 
     def _is_rege_invoice(self):
-        if not self.company or not self.party:
-            return False
+        return bool(self._get_rege())
+
+    def _get_rege(self, advanced=False):
+        if (not self.company or not self.party
+                or self.party == self.company.party):
+            return
 
         Date = Pool().get('ir.date')
-        date = self.accounting_date or self.invoice_date or Date.today()
+        date = self.invoice_date or self.accounting_date or Date.today()
         party_rege = self.party.get_rege_by_date(date)
         company_rege = self.company.party.get_rege_by_date(date)
-        return bool(party_rege and party_rege == company_rege)
+        if party_rege and party_rege == company_rege:
+            period = party_rege.get_period_by_date(date)
+            if period and (not advanced or period.type == 'advanced'):
+                return party_rege
+
+    @fields.depends('company', 'party', 'invoice_date', 'accounting_date',
+        'type', 'journal', 'state')
+    def _set_rege_journal(self):
+        if self.state != 'draft' or self.type != 'out':
+            return
+        rege = self._get_rege(advanced=True)
+        if rege:
+            self.journal = rege.invoice_journal
+        elif self.journal:
+            REGE = Pool().get('aeat.rege')
+            if REGE.search([('invoice_journal', '=', self.journal.id)], limit=1):
+                Journal = Pool().get('account.journal')
+                reserved = [r.invoice_journal.id for r in REGE.search([
+                            ('invoice_journal', '!=', None)])]
+                journals = Journal.search([
+                        ('type', '=', 'revenue'), ('id', 'not in', reserved)],
+                    limit=1)
+                self.journal = journals[0] if journals else None
+
+    @fields.depends(methods=['_set_rege_journal'])
+    def on_change_party(self):
+        super().on_change_party()
+        self._set_rege_journal()
+
+    @fields.depends(methods=['_set_rege_journal'])
+    def on_change_invoice_date(self):
+        super().on_change_invoice_date()
+        self._set_rege_journal()
+
+    @fields.depends(methods=['_set_rege_journal'])
+    def on_change_accounting_date(self):
+        super().on_change_accounting_date()
+        self._set_rege_journal()
+
+    @fields.depends(methods=['_set_rege_journal'])
+    def on_change_company(self):
+        super().on_change_company()
+        self._set_rege_journal()
+
+    def _rege_sequence(self):
+        rege = self._get_rege(advanced=True)
+        if self.type != 'out' or not rege:
+            return
+        if not rege.invoice_journal or self.journal != rege.invoice_journal:
+            raise UserError(gettext('aeat_rege.msg_invoice_journal',
+                    invoice=self.rec_name, rege=rege.rec_name))
+        pool = Pool()
+        Date = pool.get('ir.date')
+        Sequence = pool.get('account.journal.invoice.sequence')
+        date = self.invoice_date or self.accounting_date or Date.today()
+        candidates = Sequence.search([
+                ('journal', '=', self.journal.id),
+                ('company', '=', self.company.id),
+                ('fiscalyear.start_date', '<=', date),
+                ('fiscalyear.end_date', '>=', date),
+                ['OR', ('period', '=', None),
+                    [('period.start_date', '<=', date),
+                     ('period.end_date', '>=', date)]]],
+            order=[('period', 'DESC NULLS LAST')])
+        sequence = (getattr(candidates[0], self._sequence_field)
+            if candidates else None)
+        if not sequence:
+            raise UserError(gettext('aeat_rege.msg_invoice_sequence',
+                    invoice=self.rec_name, company=self.company.rec_name,
+                    journal=self.journal.rec_name, date=str(date)))
+        fields_ = ['out_invoice_sequence', 'out_credit_note_sequence']
+        shared = Sequence.search([
+                ('journal', '!=', self.journal.id),
+                ['OR', *[(field, '=', sequence.id) for field in fields_]]],
+            limit=1)
+        StandardSequence = pool.get('account.fiscalyear.invoice_sequence')
+        shared += StandardSequence.search([
+                'OR', *[(field, '=', sequence.id) for field in fields_]], limit=1)
+        if shared:
+            raise UserError(gettext('aeat_rege.msg_shared_sequence',
+                    sequence=sequence.rec_name))
+        return sequence, date
+
+    def _number_sequence(self, pattern=None):
+        return self._rege_sequence() or super()._number_sequence(pattern)
+
+    @classmethod
+    def _prepare_rege(cls, invoices):
+        for invoice in invoices:
+            if invoice.state == 'draft' and not invoice.number:
+                invoice._set_rege_journal()
+                invoice.save()
+            if invoice._get_rege(advanced=True):
+                for line in invoice.lines:
+                    if (line.type == 'line' and not line.rege_cost_base_exclude
+                            and line.cost_price is None):
+                        raise UserError(gettext('aeat_rege.msg_missing_cost',
+                                invoice=invoice.rec_name))
+                    if line.rege_exemption_waived:
+                        Tax = Pool().get('account.tax')
+                        taxes = Tax.compute([tax for tax in line.taxes
+                                if getattr(tax, 'tax_kind', 'vat')
+                                not in ('irpf', 'surcharge')],
+                            Decimal(1), 1, line.tax_date)
+                        if not any(t['amount'] > 0 for t in taxes):
+                            raise UserError(gettext('aeat_rege.msg_waiver_tax',
+                                    invoice=invoice.rec_name))
+                invoice._rege_sequence()
+
+    @classmethod
+    def validate_invoice(cls, invoices):
+        cls._prepare_rege(invoices)
+        super().validate_invoice(invoices)
+
+    @classmethod
+    def set_number(cls, invoices):
+        cls._prepare_rege(invoices)
+        super().set_number(invoices)
 
     def get_rege_received_cost_base(self):
-        partial_deduction = any(line.taxes_deductible_rate is not None
-                and line.taxes_deductible_rate != 1
-                for line in self.lines)
         cost = Decimal(0)
         for line in self.lines:
-            if line.rege_cost_base_exclude:
+            if line.type != 'line' or line.rege_cost_base_exclude:
                 continue
-            price = line.cost_price if partial_deduction else line.unit_price
+            price = line.cost_price
             cost += ((price or Decimal(0))
                 * Decimal(str(line.quantity or 0)))
         if self.currency:
             cost = self.currency.round(cost)
         return cost
 
+    def get_rege_general_base(self):
+        amount = sum(((line.rege_general_price
+                    if line.rege_general_price is not None
+                    else line.unit_price or Decimal(0))
+                * Decimal(str(line.quantity or 0))
+                for line in self.lines if line.type == 'line'), Decimal(0))
+        return self.currency.round(amount)
+
+    def get_rege_legal_notice(self):
+        if not self._get_rege(advanced=True):
+            return ''
+        notices = [gettext('aeat_rege.msg_legal_notice_tax')]
+        if any(line.rege_exemption_waived for line in self.lines
+                if line.type == 'line'):
+            notices.append(gettext('aeat_rege.msg_legal_notice_waiver'))
+        return '\n'.join(notices)
+
+    def get_rege_report_data(self):
+        """Return fiscal data shared by standard and customer reports."""
+        if not self._get_rege(advanced=True):
+            return
+        line_notices = []
+        for line in self.lines:
+            if line.type != 'line':
+                continue
+            description = line.description or (
+                line.product.rec_name if line.product else '')
+            if line.rege_exemption_waived:
+                line_notices.append((description,
+                        gettext('aeat_rege.msg_report_waiver')))
+                continue
+            taxes = list(line.taxes)
+            seen = set()
+            while taxes:
+                tax = taxes.pop(0)
+                taxes.extend(tax.childs)
+                notice = tax.legal_notice
+                if (not notice
+                        and getattr(tax, 'sii_exemption_cause', None) == 'E1'):
+                    notice = gettext('aeat_rege.msg_report_exemption')
+                if notice and notice not in seen:
+                    line_notices.append((description, notice))
+                    seen.add(notice)
+        return {
+            'bases': [
+                (gettext('aeat_rege.msg_report_general_base'),
+                    self.get_rege_general_base()),
+                (gettext('aeat_rege.msg_report_cost_base'),
+                    self.get_rege_received_cost_base()),
+                ],
+            'legal_notice': self.get_rege_legal_notice(),
+            'line_notices': line_notices,
+            }
+
     @classmethod
     def post(cls, invoices):
+        cls._prepare_rege(invoices)
         Warning = Pool().get('res.user.warning')
         excluded_cost_invoices = [invoice for invoice in invoices
             if (invoice._is_rege_invoice() and invoice.cost_price_show
@@ -79,16 +251,19 @@ class Invoice(metaclass=PoolMeta):
                     invoices=invoices_names))
         super().post(invoices)
 
-    @fields.depends('company', 'party', 'accounting_date', 'invoice_date')
+    @fields.depends('company', 'party', 'accounting_date', 'invoice_date', 'type')
     def _on_change_lines_taxes(self):
         super()._on_change_lines_taxes()
-        if getattr(self, 'type', None) != 'out' or not self._is_rege_invoice():
+        notices = {gettext('aeat_rege.msg_legal_notice_tax'),
+            gettext('aeat_rege.msg_legal_notice_waiver')}
+        for tax in self.taxes or []:
+            tax.legal_notice = '\n'.join(text for text
+                in (tax.legal_notice or '').split('\n') if text not in notices)
+        if (getattr(self, 'type', None) != 'out'
+                or not self._get_rege(advanced=True)):
             return
 
-        legal_notice = gettext('aeat_rege.msg_legal_notice_tax')
-        if any(legal_notice in (tax.legal_notice or '').split('\n')
-                for tax in self.taxes or []):
-            return
+        legal_notice = self.get_rege_legal_notice()
         for tax in self.taxes or []:
             tax.legal_notice = '\n'.join(filter(None, [
                 tax.legal_notice, legal_notice]))
@@ -101,7 +276,7 @@ class SIIInvoice(metaclass=PoolMeta):
     def _set_sii_keys(self):
         super()._set_sii_keys()
 
-        if self._is_rege_invoice():
+        if self._get_rege(advanced=True):
             if self.type == 'out':
                 self.sii_issued_key = '06'
             elif self.type == 'in':
@@ -114,19 +289,38 @@ class InvoiceLine(metaclass=PoolMeta):
     cost_price = fields.Numeric('Cost Price', digits='currency',
         help=('Available only if the "Company" and "Party" '
             'share the same REGE of type "Advanced"; used for '
-            'tax calculations and defaults to the product\'s cost price.'),
+            'VAT-bearing attributable unit cost, excluding margin and costs '
+            'without deductible Spanish VAT. Enter zero explicitly when '
+            'justified; a missing cost is not zero.'),
         states={
-            'required': Bool(Eval('cost_price_show')),
+            'required': (Bool(Eval('cost_price_show'))
+                & ~Bool(Eval('rege_cost_base_exclude'))
+                & (Eval('invoice_state') != 'draft')),
             'invisible': ~Bool(Eval('cost_price_show')),
             'readonly': Eval('invoice_state') != 'draft',
             })
     cost_price_show = fields.Function(
         fields.Boolean('Display Cost Price?'),
         'on_change_with_cost_price_show')
+    rege_general_price = fields.Numeric('General VAT Unit Value',
+        digits='currency',
+        help=('Valuation under articles 78 and 79, for reporting and deduction '
+            'ratios. Leave empty to use the commercial unit price.'),
+        states={
+            'invisible': ~Bool(Eval('cost_price_show')),
+            'readonly': Eval('invoice_state') != 'draft',
+            })
+    rege_exemption_waived = fields.Boolean('REGE Exemption Waived',
+        help=('Waiver under article 163 sexies.Five for this operation. '
+            'Select the applicable VAT tax on the line.'),
+        states={
+            'invisible': ~Bool(Eval('cost_price_show')),
+            'readonly': Eval('invoice_state') != 'draft',
+            })
     rege_cost_base_exclude = fields.Boolean(
         'Exclude from REGE Cost Base',
-        help=('Use this field only for own work or margin. Include costs '
-            'for materials and services provided by third parties.'),
+        help=('Exclude own work, margin and costs without deductible Spanish '
+            'VAT. Include attributable VAT-bearing third-party costs.'),
         states={
             'invisible': ~Bool(Eval('cost_price_show')),
             'readonly': Eval('invoice_state') != 'draft',
@@ -160,44 +354,56 @@ class InvoiceLine(metaclass=PoolMeta):
         super().on_change_account()
         self._set_rege_cost_base_exclude()
 
-    @fields.depends('product', '_parent_product.cost_price')
-    def on_change_with_cost_price(self):
-        if self.product:
-            return self.product.cost_price
-
     @fields.depends('company', 'cost_price', 'invoice', 'invoice_party',
         'invoice_state', 'invoice_type', 'type',
-        '_parent_invoice.accounting_date', '_parent_invoice.invoice_date')
+        '_parent_invoice.accounting_date', '_parent_invoice.invoice_date',
+        '_parent_invoice.company', '_parent_invoice.party')
     def on_change_with_cost_price_show(self, name=None):
-        Date = Pool().get('ir.date')
+        return bool(self.type == 'line' and self.invoice
+            and self.invoice._get_rege(advanced=True))
 
-        if (not self.company or not self.invoice_party or self.type != 'line'
-                or not self.invoice):
-            return False
+    @property
+    def taxable_lines(self):
+        if not self.on_change_with_cost_price_show():
+            return super().taxable_lines
+        rate = Transaction().context.get('_deductible_rate')
+        if rate is None:
+            rate = self.taxes_deductible_rate
+        if self.invoice_type != 'in' or rate is None:
+            rate = Decimal(1)
+        price = (Decimal(0) if self.rege_cost_base_exclude
+            else self.cost_price or Decimal(0))
+        if Transaction().context.get('_rege_general_base'):
+            price = (self.rege_general_price
+                if self.rege_general_price is not None
+                else self.unit_price or Decimal(0))
+        vat = [t for t in self.taxes
+            if getattr(t, 'tax_kind', 'vat') not in ('irpf', 'surcharge')]
+        other = [t for t in self.taxes if t not in vat]
+        result = []
+        if rate:
+            result.append((vat, price * rate, self.quantity or 0, self.tax_date))
+        if other:
+            result.append((other, self.unit_price or Decimal(0),
+                    self.quantity or 0, self.tax_date))
+        return result
 
-        date = (self.invoice.accounting_date or self.invoice.invoice_date
-            or Date.today())
-
-        party_rege = self.invoice_party.get_rege_by_date(date)
-        company_rege = self.company.party.get_rege_by_date(date)
-        if not party_rege or not company_rege or party_rege != company_rege:
-            return False
-
-        period = party_rege.get_period_by_date(date)
-        if not period or period.type != 'advanced':
-            return False
-
-        if self.invoice_state != 'draft':
-            if self.invoice_type == 'in':
-                return True
-            return self.cost_price is not None
-
-        return True
+    @fields.depends('cost_price', 'rege_cost_base_exclude',
+        'rege_general_price', 'rege_exemption_waived',
+        'company', 'invoice', '_parent_invoice.party',
+        '_parent_invoice.company', '_parent_invoice.invoice_date',
+        '_parent_invoice.accounting_date', '_parent_invoice.type',
+        'type', 'quantity', 'taxes', 'unit_price', 'taxes_deductible_rate',
+        'invoice_type')
+    def _get_taxes(self):
+        return super()._get_taxes()
 
     def _credit(self):
         line = super()._credit()
         line.cost_price = self.cost_price
         line.rege_cost_base_exclude = self.rege_cost_base_exclude
+        line.rege_general_price = self.rege_general_price
+        line.rege_exemption_waived = self.rege_exemption_waived
         return line
 
 
@@ -214,12 +420,8 @@ class InvoiceTax(metaclass=PoolMeta):
     def _get_cost_price_lines(self):
         if not self.invoice or not self.tax:
             return []
-        InvoiceLine = Pool().get('account.invoice.line')
-        return InvoiceLine.search([
-                ('invoice', '=', self.invoice.id),
-                ('type', '=', 'line'),
-                ('taxes', '=', self.tax.id),
-                ])
+        return [line for line in self.invoice.lines
+            if line.type == 'line' and self.tax in line.taxes]
 
     @fields.depends('invoice', '_parent_invoice.cost_price_show')
     def on_change_with_cost_price_show(self, name=None):

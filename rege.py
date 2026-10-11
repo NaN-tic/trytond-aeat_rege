@@ -21,6 +21,13 @@ class REGE(ModelView, ModelSQL):
         required=True)
     members = fields.One2Many('aeat.rege.member', 'rege', 'Members',
         help='History of party memberships.')
+    invoice_journal = fields.Many2One('account.journal', 'Invoice Journal',
+        domain=[('type', '=', 'revenue')],
+        states={'required': Bool(Eval('has_advanced_period'))},
+        help='Dedicated journal for advanced REGE customer invoices.')
+    has_advanced_period = fields.Function(fields.Boolean('Advanced Period'),
+        'on_change_with_has_advanced_period')
+
     active_member_count = fields.Function(
         fields.Integer('Active Members',
             help='Total number of parties currently registered.'),
@@ -36,6 +43,10 @@ class REGE(ModelView, ModelSQL):
     is_active = fields.Function(
         fields.Boolean('Active Today?'),
         'on_change_with_is_active')
+
+    @fields.depends('periods')
+    def on_change_with_has_advanced_period(self, name=None):
+        return any(p.type == 'advanced' for p in self.periods)
 
     @classmethod
     def __setup__(cls):

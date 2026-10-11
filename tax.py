@@ -12,7 +12,7 @@ class TaxTemplate(metaclass=PoolMeta):
         'Exclude from REGE Cost Base by Default',
         help=('Lines using this tax are excluded from the REGE cost base by '
             'default. Review the value on each invoice line: costs for '
-            'materials and third-party services must be included.'))
+            'VAT-bearing materials and third-party services must be included.'))
 
     def _get_tax_value(self, tax=None):
         values = super()._get_tax_value(tax)
@@ -29,4 +29,4 @@ class Tax(metaclass=PoolMeta):
         'Exclude from REGE Cost Base by Default',
         help=('Lines using this tax are excluded from the REGE cost base by '
             'default. Review the value on each invoice line: costs for '
-            'materials and third-party services must be included.'))
+            'VAT-bearing materials and third-party services must be included.'))

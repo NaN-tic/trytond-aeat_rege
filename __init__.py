@@ -2,7 +2,7 @@
 # The COPYRIGHT file at the top level of this repository contains
 # the full copyright notices and license terms.
 from trytond.pool import Pool
-from . import aeat_mapping, invoice, papyrus, party, rege, tax
+from . import aeat_mapping, invoice, papyrus, party, rege, report, tax
 
 def register():
     Pool.register(
@@ -29,4 +29,11 @@ def register():
     Pool.register(
         module='aeat_rege', type_='wizard')
     Pool.register(
+        report.InvoiceReport,
+        module='aeat_rege', type_='report')
+    # Keep the HTML dependency optional for users of the standard ODT report.
+    from . import html_report
+    Pool.register(
+        html_report.InvoiceReport,
+        depends=['html_report'],
         module='aeat_rege', type_='report')

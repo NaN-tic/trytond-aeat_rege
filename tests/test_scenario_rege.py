@@ -2,7 +2,8 @@ import unittest
 import datetime
 from decimal import Decimal
 from proteus import Model, Wizard, config
-from trytond.exceptions import UserWarning
+from trytond.exceptions import UserError, UserWarning
+from trytond.transaction import Transaction
 from trytond.tests.test_tryton import drop_db
 from trytond.tests.tools import activate_modules
 from trytond.modules.company.tests.tools import create_company, get_company
@@ -15,9 +16,11 @@ class Test(unittest.TestCase):
 
     def setUp(self):
         drop_db()
+        super().setUp()
 
     def tearDown(self):
         drop_db()
+        super().tearDown()
 
     def test(self):
         activate_modules(['aeat_rege', 'aeat_sii', 'account_es'])
@@ -25,6 +28,8 @@ class Test(unittest.TestCase):
         AccountConfiguration = Model.get('account.configuration')
         Certificate = Model.get('certificate')
         Invoice = Model.get('account.invoice')
+        Journal = Model.get('account.journal')
+        Sequence = Model.get('ir.sequence.strict')
         Rege = Model.get('aeat.rege')
         Party = Model.get('party.party')
         ProductCategory = Model.get('product.category')
@@ -64,6 +69,18 @@ class Test(unittest.TestCase):
         fiscalyear = set_fiscalyear_invoice_sequences(
             create_fiscalyear(company, today))
         fiscalyear.click('create_period')
+        journal = Journal(name='REGE', type='revenue')
+        journal.save()
+        standard = fiscalyear.invoice_sequences[0].out_invoice_sequence
+        sequence, = Sequence.duplicate([standard], {'prefix': 'REGE/'})
+        credit_sequence, = Sequence.duplicate([standard], {'prefix': 'R-REGE/'})
+        journal_sequence = fiscalyear.journal_sequences.new()
+        journal_sequence.journal = journal
+        journal_sequence.company = company
+        journal_sequence.out_invoice_sequence = sequence
+        journal_sequence.out_credit_note_sequence = credit_sequence
+        fiscalyear.save()
+        journal_sequence, = fiscalyear.journal_sequences
 
             # Create chart of accounts
         create_chart(company)
@@ -71,9 +88,12 @@ class Test(unittest.TestCase):
 
         # Create tax
         tax = create_tax(Decimal('0.21'))
+        tax.tax_kind = 'vat'
+        tax.deducible = True
         tax.legal_notice = 'Existing legal notice'
         tax.save()
         second_tax = create_tax(Decimal('0.10'))
+        second_tax.tax_kind = 'vat'
         second_tax.save()
         excluded_cost_tax = create_tax(Decimal('0.00'))
         excluded_cost_tax.rege_cost_base_exclude = True
@@ -101,6 +121,7 @@ class Test(unittest.TestCase):
 
             # Create REGE + period
         rege = Rege(name='REGE Group')
+        rege.invoice_journal = journal
         period_advanced = rege.periods.new()
         period_advanced.type = 'advanced'
         period_advanced.start_date = today
@@ -114,10 +135,12 @@ class Test(unittest.TestCase):
             # Link REGE with both parties
         company_membership = company.party.rege_memberships.new()
         company_membership.rege = rege
+        company_membership.registration_date = yesterday
         company_membership.save()
 
         customer_membership = customer.rege_memberships.new()
         customer_membership.rege = rege
+        customer_membership.registration_date = yesterday
         customer_membership.save()
 
         base_invoice = lambda: Invoice(
@@ -134,6 +157,7 @@ class Test(unittest.TestCase):
         line.product = product
         line.quantity = 1
         line.unit_price = Decimal('10.00')
+        line.cost_price = Decimal('4.00')
         line.account = accounts['revenue']
         line.taxes.append(Tax(tax.id))
         line.taxes.append(Tax(second_tax.id))
@@ -143,8 +167,8 @@ class Test(unittest.TestCase):
         self.assertEqual(line.cost_price, product.cost_price)
         self.assertEqual(line.amount, Decimal('10.00'))
         self.assertEqual(invoice.untaxed_amount, Decimal('10.00'))
-        self.assertEqual(invoice.tax_amount, Decimal('3.10'))
-        self.assertEqual(invoice.total_amount, Decimal('13.10'))
+        self.assertEqual(invoice.tax_amount, Decimal('1.24'))
+        self.assertEqual(invoice.total_amount, Decimal('11.24'))
         self.assertEqual(invoice.sii_issued_key, '06')
         legal_notice = ('Special regime for groups of entities, article 163 '
             'octies of VAT Law 37/1992.')
@@ -173,11 +197,52 @@ class Test(unittest.TestCase):
         self.assertEqual(tax_line.cost_price_show, True)
         self.assertEqual(tax_line.cost_price, Decimal('4.00'))
 
+        # Presentation lines must not change the fiscal treatment.
         invoice.click('draft')
         self.assertEqual(invoice.state, 'draft')
-        tax_line, = [tax_line for tax_line in invoice.taxes
-            if tax_line.tax.id == tax.id]
-        self.assertEqual(tax_line.cost_price, Decimal('4.00'))
+        invoice.lines.new(type='comment', description='REGE detail')
+        invoice.save()
+        self.assertTrue(invoice.cost_price_show)
+        self.assertEqual(invoice.tax_amount, Decimal('1.24'))
+        self.assertEqual(invoice.journal, journal)
+
+        payment_term = Model.get('account.invoice.payment_term')(name='Direct')
+        payment_term.lines.new(type='remainder')
+        payment_term.save()
+        invoice.payment_term = payment_term
+        invoice.save()
+        invoice.click('post')
+        self.assertEqual(invoice.state, 'posted')
+        self.assertTrue(invoice.number.startswith('REGE/'))
+        self.assertEqual(invoice.total_amount, Decimal('11.24'))
+        self.assertEqual(sum((l.debit - l.credit for l in invoice.move.lines
+                    if l.account.id == accounts['receivable'].id), Decimal(0)),
+            Decimal('11.24'))
+
+        cfg = config.get_config()
+        with Transaction().start(cfg.database_name, cfg.user,
+                context=cfg.context):
+            backend_invoice = cfg.pool.get('account.invoice')(invoice.id)
+            mapper = cfg.pool.get('aeat.sii.issued.invoice.mapper')()
+            self.assertEqual(mapper.total_amount(backend_invoice),
+                Decimal('11.24'))
+            for invoice_tax in backend_invoice.taxes:
+                values = mapper.build_taxes(invoice_tax)
+                self.assertEqual(values['BaseImponible'], Decimal('10.00'))
+                self.assertEqual(values['CuotaRepercutida'], invoice_tax.amount)
+            self.assertEqual(backend_invoice.get_rege_received_cost_base(),
+                Decimal('4.00'))
+
+        credit = Wizard('account.invoice.credit', models=[invoice])
+        credit.execute('credit')
+        credit_invoice, = Invoice.find([('id', '!=', invoice.id)])
+        with self.assertRaises(UserWarning) as caught:
+            credit_invoice.click('post')
+        _, (key, *_) = caught.exception.args
+        Warning.skip(key, True, config.get_config().context)
+        credit_invoice.click('post')
+        self.assertTrue(credit_invoice.number.startswith('R-REGE/'))
+        self.assertEqual(credit_invoice.total_amount, Decimal('-11.24'))
 
         # The tax default may be overridden for each REGE invoice line.
         invoice = base_invoice()
@@ -242,6 +307,84 @@ class Test(unittest.TestCase):
         self.assertEqual(invoice.untaxed_amount, Decimal('10.00'))
         self.assertEqual(invoice.tax_amount, Decimal('2.1'))
         self.assertEqual(invoice.total_amount, Decimal('12.1'))
+        self.assertNotEqual(invoice.sii_issued_key, '06')
+
+        # Missing costs and shared sequences must block before numbering.
+        invoice = base_invoice()
+        invoice.invoice_date = today
+        invoice.payment_term = payment_term
+        line = invoice.lines.new()
+        line.product = product
+        line.quantity = 1
+        line.unit_price = Decimal('100')
+        invoice.save()
+        self.assertIsNone(line.cost_price)
+        with self.assertRaisesRegex(UserError, 'unit cost'):
+            invoice.click('post')
+        invoice.reload()
+        self.assertFalse(invoice.number)
+        invoice.lines[0].cost_price = Decimal('40')
+        invoice.save()
+        journal_sequence.out_invoice_sequence = standard
+        journal_sequence.save()
+        with self.assertRaisesRegex(UserError, 'ordinary invoices'):
+            invoice.click('validate_invoice')
+        journal_sequence.out_invoice_sequence = sequence
+        journal_sequence.save()
+        journal_sequence.out_credit_note_sequence = None
+        journal_sequence.save()
+        invoice.lines[0].quantity = -1
+        invoice.save()
+        with self.assertRaisesRegex(UserError, 'No dedicated sequence'):
+            invoice.click('post')
+        invoice.reload()
+        self.assertFalse(invoice.number)
+        journal_sequence.out_credit_note_sequence = credit_sequence
+        journal_sequence.save()
+
+        # Deductibility affects input VAT, never the supplier's cost base.
+        received = Invoice(party=customer, company=company, type='in')
+        received.invoice_date = today
+        received.payment_term = payment_term
+        line = received.lines.new()
+        line.product = product
+        line.quantity = 1
+        line.unit_price = Decimal('100')
+        line.cost_price = Decimal('40')
+        line.taxes.append(Tax(tax.id))
+        line.taxes_deductible_rate = Decimal('0.25')
+        received.save()
+        self.assertEqual(received.tax_amount, Decimal('2.10'))
+        self.assertEqual(received.untaxed_amount, Decimal('106.30'))
+        self.assertEqual(received.total_amount, Decimal('108.40'))
+        received.lines[0].taxes_deductible_rate = Decimal('0')
+        received.save()
+        self.assertEqual(received.tax_amount, Decimal('0'))
+        self.assertEqual(received.total_amount, Decimal('108.40'))
+        received.lines[0].taxes_deductible_rate = Decimal('1')
+        received.save()
+        self.assertEqual(received.tax_amount, Decimal('8.40'))
+        self.assertEqual(received.total_amount, Decimal('108.40'))
+        received.lines[0].taxes_deductible_rate = Decimal('0.25')
+        received.save()
+        with Transaction().start(cfg.database_name, cfg.user,
+                context=cfg.context):
+            backend_received = cfg.pool.get('account.invoice')(received.id)
+            mapper = cfg.pool.get('aeat.sii.recieved.invoice.mapper')()
+            self.assertEqual(backend_received.get_rege_received_cost_base(),
+                Decimal('40'))
+            self.assertEqual(mapper.total_amount(backend_received),
+                Decimal('108.40'))
+            self.assertEqual(mapper._deductible_amount(backend_received),
+                Decimal('2.10'))
+            detail = mapper.build_taxes(
+                backend_received, backend_received.taxes[0])
+            non_deductible, = mapper._not_deductible_taxes(
+                backend_received).values()
+            self.assertEqual(detail['BaseImponible'] + non_deductible['base'],
+                Decimal('100'))
+            self.assertEqual(detail['CuotaSoportada'] + non_deductible['amount'],
+                Decimal('8.40'))
 
         ## CASE 3
         # Party without REGE
@@ -265,6 +408,18 @@ class Test(unittest.TestCase):
         self.assertEqual(invoice.untaxed_amount, Decimal('10.00'))
         self.assertEqual(invoice.tax_amount, Decimal('2.1'))
         self.assertEqual(invoice.total_amount, Decimal('12.1'))
+
+        # A membership without a valid regime period must not set SII key 06.
+        future = today + datetime.timedelta(days=10)
+        rege.reload()
+        advanced, = [p for p in rege.periods if p.type == 'advanced']
+        advanced.end_date = today + datetime.timedelta(days=1)
+        rege.save()
+        invoice = base_invoice()
+        invoice.invoice_date = future
+        invoice.save()
+        self.assertFalse(invoice.cost_price_show)
+        self.assertNotEqual(invoice.sii_issued_key, '06')
 
         ## CASE 6
         # Different REGEs for Party and Company

@@ -7,5 +7,9 @@ this repository contains the full copyright notices and license terms. -->
         <field name="cost_price"/>
         <label name="rege_cost_base_exclude"/>
         <field name="rege_cost_base_exclude"/>
+        <label name="rege_general_price"/>
+        <field name="rege_general_price"/>
+        <label name="rege_exemption_waived"/>
+        <field name="rege_exemption_waived"/>
     </xpath>
 </data>

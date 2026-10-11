@@ -3,6 +3,72 @@ aeat_rege
 
 The aeat_rege module of the Tryton application platform.
 
+Advanced REGE invoicing
+-----------------------
+
+Configure a dedicated revenue journal on each group with advanced periods.
+For every participating company and fiscal year, configure customer invoice
+and customer credit note sequences in Journal Sequences. Do not reuse the
+ordinary invoice sequences. Missing configuration blocks validation/numbering.
+Existing groups need their journal configured after upgrading the module.
+
+Membership and regime periods are evaluated using the invoice date, falling
+back to the accounting date and then today. Membership ending dates are
+inclusive fiscal dates: for an exclusion effective during May, set April 30
+as the last REGE date. Eligibility, elections and their statutory deadlines
+must be checked before entering the fiscal dates.
+
+Enter the attributable VAT-bearing unit cost explicitly on each advanced
+intragroup invoice line, including supplier invoices. A missing cost blocks
+validation; a justified zero is allowed. Product inventory cost and the
+commercial price are not automatic substitutes for fiscal cost. Allocate
+investment goods within their statutory regularization periods before entering
+the cost. Keep supporting allocation calculations with the invoice documents.
+
+The cost determines VAT and tax bases in accounting. The commercial price
+continues to determine revenue/payables. Supplier deductibility affects only
+deductible VAT, not the cost base. Exclude own work, margin and costs without
+deductible Spanish VAT using the explicit line flag. Review tax defaults for
+this flag; imported/generated lines must also supply their fiscal costs.
+
+General VAT Unit Value optionally records a valuation under articles 78 and 79
+different from the commercial price; it does not change the amount payable.
+REGE Exemption Waived records the election for the individual operation and
+requires selection of the applicable VAT tax. It does not choose a tax rate.
+The standard account_invoice ODT report and the standard html_report invoice
+display both bases, the REGE notice and the applicable notices per operation.
+Exemption notices come from the configured taxes and coexist with REGE; they
+are not inferred from a zero cost or zero VAT amount. Waiver notices apply
+only to the explicitly marked lines. Configure the exemption legal notice on
+the tax, including the relevant article. With SII, E1 provides an article 20
+fallback when the tax has no more specific notice.
+
+The cediv and imi layouts reuse the HTML summary supplied by aeat_rege. Custom ODT
+templates and HTML layouts overriding the standard footer must integrate
+invoice.get_rege_report_data() or REGEReportMixin.show_rege_summary(record).
+The data API returns bases (label/amount pairs), legal_notice and line_notices
+(description/notice pairs). This lets custom layouts preserve their design.
+No change to the invoice comment or persisted tax amounts is made by printing.
+
+SII uses the invoice's computed taxes and reports the cost base independently
+of the recipient's deduction percentage. The advanced regime uses key 06.
+In accordance with the AEAT SII common registration FAQ, BaseImponible contains
+the general valuation under articles 78 and 79, BaseImponibleACoste contains
+the REGE cost and the VAT amount is calculated on that cost.
+Reference: https://sede.agenciatributaria.gob.es/Sede/impuestos-tasas/iva/iva-libros-registro-iva-traves-aeat/preguntas-frecuentes/2-registro-cuestiones-comunes.html
+
+Upgrade notes
+-------------
+
+Update aeat_rege and cediv, configure the group journals and fiscal-year
+sequences, then review draft invoices before posting. Costs previously filled
+with zero by cediv cannot be distinguished automatically from justified zeros;
+review them against their source documents. Previously posted invoices and
+SII submissions require reconciliation before any correction or resubmission.
+
+This module does not generate forms 039, 322 or 353, an analytical memorandum,
+investment allocation schedules or differentiated-sector pro-rata returns.
+
 Installing
 ----------
 
