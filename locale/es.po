@@ -70,6 +70,18 @@ msgctxt "field:aeat.rege,is_active:"
 msgid "Active Today?"
 msgstr "¿Hoy activo?"
 
+msgctxt "field:aeat.rege,invoice_journal:"
+msgid "Invoice Journal"
+msgstr "Diario de facturación"
+
+msgctxt "field:aeat.rege,has_advanced_period:"
+msgid "Advanced Period"
+msgstr "Período avanzado"
+
+msgctxt "help:aeat.rege,invoice_journal:"
+msgid "Dedicated journal for advanced REGE customer invoices."
+msgstr "Diario específico para las facturas de cliente del REGE avanzado."
+
 msgctxt "field:aeat.rege,members:"
 msgid "Members"
 msgstr "Miembros"
