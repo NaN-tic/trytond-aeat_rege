@@ -392,26 +392,31 @@ class InvoiceLine(metaclass=PoolMeta):
     def taxable_lines(self):
         if not self.on_change_with_cost_price_show():
             return super().taxable_lines
+        # During invoice on-change calls, new lines may only contain a subset
+        # of their fields. Use the same provisional defaults as account_invoice.
+        invoice_type = (getattr(self.invoice, 'type', None)
+            or getattr(self, 'invoice_type', None))
         rate = Transaction().context.get('_deductible_rate')
         if rate is None:
-            rate = self.taxes_deductible_rate
-        if self.invoice_type != 'in' or rate is None:
+            rate = getattr(self, 'taxes_deductible_rate', None)
+        if invoice_type != 'in' or rate is None:
             rate = Decimal(1)
-        price = (Decimal(0) if self.rege_cost_base_exclude
-            else self.cost_price or Decimal(0))
+        unit_price = getattr(self, 'unit_price', None) or Decimal(0)
+        quantity = getattr(self, 'quantity', None) or 0
+        price = (Decimal(0) if getattr(self, 'rege_cost_base_exclude', False)
+            else getattr(self, 'cost_price', None) or Decimal(0))
         if Transaction().context.get('_rege_general_base'):
-            price = (self.rege_general_price
-                if self.rege_general_price is not None
-                else self.unit_price or Decimal(0))
-        vat = [t for t in self.taxes
+            general_price = getattr(self, 'rege_general_price', None)
+            price = general_price if general_price is not None else unit_price
+        taxes = getattr(self, 'taxes', None) or []
+        vat = [t for t in taxes
             if getattr(t, 'tax_kind', 'vat') not in ('irpf', 'surcharge')]
-        other = [t for t in self.taxes if t not in vat]
+        other = [t for t in taxes if t not in vat]
         result = []
         if rate:
-            result.append((vat, price * rate, self.quantity or 0, self.tax_date))
+            result.append((vat, price * rate, quantity, self.tax_date))
         if other:
-            result.append((other, self.unit_price or Decimal(0),
-                    self.quantity or 0, self.tax_date))
+            result.append((other, unit_price, quantity, self.tax_date))
         return result
 
     @fields.depends('cost_price', 'rege_cost_base_exclude',

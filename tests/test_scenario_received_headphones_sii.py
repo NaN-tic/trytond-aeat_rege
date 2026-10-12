@@ -69,6 +69,37 @@ class TestReceivedHeadphonesSII(unittest.TestCase):
         payment_term.lines.new(type='remainder')
         payment_term.save()
 
+        # The client sends incomplete lines while a new invoice is being edited.
+        values = {
+                'type': 'in', 'state': 'draft', 'company': company.id,
+                'party': supplier.id, 'currency': company.currency.id,
+                'invoice_date': None, 'accounting_date': None,
+                'sii_received_key': '06', 'taxes': [],
+                }
+        for partial_line in [
+                {'taxes': []}, {'taxes': [tax.id]},
+                {'taxes': [tax.id], 'quantity': 1,
+                    'unit_price': Decimal('85.96')}]:
+            with self.subTest(partial_line=partial_line):
+                values['lines'] = [dict(partial_line, id=-1, type='line')]
+                changes = Invoice._proxy.on_change_lines(values, cfg.context)
+                self.assertEqual(changes['total_amount'], Decimal(0))
+
+        # The invoice type comes from the parent, even when invoice_type is
+        # absent on the line. A zero deductible rate must not become 100%.
+        for rate, amount, vat in [
+                (Decimal(1), Decimal('85.96'), Decimal('18.05')),
+                (Decimal(0), Decimal('104.01'), Decimal(0))]:
+            values['lines'] = [{
+                    'id': -1, 'type': 'line', 'taxes': [tax.id],
+                    'quantity': 1, 'unit_price': Decimal('85.96'),
+                    'cost_price': Decimal('85.96'), 'amount': amount,
+                    'taxes_deductible_rate': rate,
+                    }]
+            changes = Invoice._proxy.on_change_lines(values, cfg.context)
+            self.assertEqual(changes['tax_amount'], vat)
+            self.assertEqual(changes['total_amount'], Decimal('104.01'))
+
         invoice = Invoice(type='in', party=supplier, reference='G0007-26',
             invoice_date=date(2026, 2, 28), accounting_date=date(2026, 2, 28),
             payment_term=payment_term)
