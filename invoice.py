@@ -320,8 +320,7 @@ class InvoiceLine(metaclass=PoolMeta):
             'justified; a missing cost is not zero.'),
         states={
             'required': (Bool(Eval('cost_price_show'))
-                & ~Bool(Eval('rege_cost_base_exclude'))
-                & (Eval('invoice_state') != 'draft')),
+                & ~Bool(Eval('rege_cost_base_exclude'))),
             'invisible': ~Bool(Eval('cost_price_show')),
             'readonly': Eval('invoice_state') != 'draft',
             })

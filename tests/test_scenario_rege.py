@@ -261,6 +261,9 @@ class Test(unittest.TestCase):
         line._on_change(['taxes'])
         self.assertTrue(line.rege_cost_base_exclude)
         line.rege_cost_base_exclude = False
+        with self.assertRaisesRegex(UserError, 'Cost Price'):
+            line.save()
+        line.cost_price = Decimal(0)
         line.save()
         self.assertFalse(line.rege_cost_base_exclude)
         line.rege_cost_base_exclude = True
@@ -309,7 +312,7 @@ class Test(unittest.TestCase):
         self.assertEqual(invoice.total_amount, Decimal('12.1'))
         self.assertNotEqual(invoice.sii_issued_key, '06')
 
-        # Missing costs and shared sequences must block before numbering.
+        # Missing costs must block saving drafts, before numbering.
         invoice = base_invoice()
         invoice.invoice_date = today
         invoice.payment_term = payment_term
@@ -317,11 +320,9 @@ class Test(unittest.TestCase):
         line.product = product
         line.quantity = 1
         line.unit_price = Decimal('100')
-        invoice.save()
         self.assertIsNone(line.cost_price)
-        with self.assertRaisesRegex(UserError, 'unit cost'):
-            invoice.click('post')
-        invoice.reload()
+        with self.assertRaisesRegex(UserError, 'Cost Price'):
+            invoice.save()
         self.assertFalse(invoice.number)
         invoice.lines[0].cost_price = Decimal('40')
         invoice.save()

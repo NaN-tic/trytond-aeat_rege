@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <data>
     <xpath expr="/tree/field[@name='unit_price']" position="after">
-        <field name="cost_price" optional="0"/>
+        <field name="cost_price" optional="1"/>
         <field name="rege_cost_base_exclude" optional="0"/>
     </xpath>
 </data>

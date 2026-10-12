@@ -3,6 +3,7 @@ from datetime import date
 from decimal import Decimal
 
 from proteus import Model
+from trytond.model.exceptions import RequiredValidationError
 from trytond.modules.account.tests.tools import (
     create_chart, create_fiscalyear, create_tax, get_accounts)
 from trytond.modules.account_invoice.tests.tools import set_fiscalyear_invoice_sequences
@@ -111,6 +112,8 @@ class TestReceivedHeadphonesSII(unittest.TestCase):
             line.account = accounts['expense']
             line.quantity = 1
             line.unit_price = price
+            with self.assertRaises(RequiredValidationError):
+                invoice.save()
             line.cost_price = cost
             line.taxes_deductible_rate = Decimal(0)
             self.assertEqual([t.id for t in line.taxes], [tax.id])
