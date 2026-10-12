@@ -57,8 +57,5 @@ this repository contains the full copyright notices and license terms. -->
         <record model="ir.message" id="msg_invoice_in_rege_cost_base_zero">
             <field name="text">The following supplier REGE invoices have a base at cost of zero: %(invoices)s.</field>
         </record>
-        <record model="ir.message" id="msg_invoice_rege_cost_base_excluded">
-            <field name="text">Review the lines excluded from the REGE cost base on the following invoices: %(invoices)s. Exclude own work, margin and costs without deductible Spanish VAT; include attributable VAT-bearing third-party costs.</field>
-        </record>
     </data>
 </tryton>

@@ -23,16 +23,16 @@ must be checked before entering the fiscal dates.
 
 Enter the attributable VAT-bearing unit cost explicitly on each advanced
 intragroup invoice line, including supplier invoices. A missing cost blocks
-validation; a justified zero is allowed. Product inventory cost and the
+saving even in draft; a justified explicit zero is allowed. Product inventory cost and the
 commercial price are not automatic substitutes for fiscal cost. Allocate
 investment goods within their statutory regularization periods before entering
 the cost. Keep supporting allocation calculations with the invoice documents.
 
 The cost determines VAT and tax bases in accounting. The commercial price
 continues to determine revenue/payables. Supplier deductibility affects only
-deductible VAT, not the cost base. Exclude own work, margin and costs without
-deductible Spanish VAT using the explicit line flag. Review tax defaults for
-this flag; imported/generated lines must also supply their fiscal costs.
+deductible VAT, not the cost base. Enter zero explicitly for operations with no
+attributable fiscal cost. Imported/generated lines must also supply their
+fiscal costs; taxes do not supply a cost or an exclusion default.
 
 General VAT Unit Value optionally records a valuation under articles 78 and 79
 different from the commercial price; it does not change the amount payable.
@@ -62,6 +62,14 @@ Reference: https://sede.agenciatributaria.gob.es/Sede/impuestos-tasas/iva/iva-li
 
 Upgrade notes
 -------------
+
+The former cost-base exclusion flag is removed from invoice lines, taxes and
+tax templates. During upgrade, all previously excluded lines receive an
+explicit cost of zero, including lines with a nonzero stored cost: the flag
+previously overrode that cost. Non-excluded lines keep their original costs.
+The obsolete columns and views are removed. This migration is idempotent and
+does not recalculate invoice amounts, accounting moves or submitted SII data.
+Review integrations that supplied the removed flag and send explicit costs.
 
 The legacy REGE exemption purchase/sale taxes expire on 2026-09-30 (inclusive).
 On module upgrade, taxes linked to the former REGE templates are marked as

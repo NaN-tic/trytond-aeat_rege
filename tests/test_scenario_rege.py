@@ -96,7 +96,6 @@ class Test(unittest.TestCase):
         second_tax.tax_kind = 'vat'
         second_tax.save()
         excluded_cost_tax = create_tax(Decimal('0.00'))
-        excluded_cost_tax.rege_cost_base_exclude = True
         excluded_cost_tax.save()
 
             # Create account category
@@ -256,21 +255,17 @@ class Test(unittest.TestCase):
         line.unit_price = Decimal('10.00')
         line.account = accounts['revenue']
         line.taxes.append(Tax(excluded_cost_tax.id))
-        line.save()
-
-        line._on_change(['taxes'])
-        self.assertTrue(line.rege_cost_base_exclude)
-        line.rege_cost_base_exclude = False
         with self.assertRaisesRegex(UserError, 'Cost Price'):
             line.save()
         line.cost_price = Decimal(0)
         line.save()
-        self.assertFalse(line.rege_cost_base_exclude)
-        line.rege_cost_base_exclude = True
-        line.save()
-        self.assertTrue(line.rege_cost_base_exclude)
-        with self.assertRaises(UserWarning):
+        with self.assertRaises(UserWarning) as caught:
             invoice.click('post')
+        _, (key, *_) = caught.exception.args
+        Warning.skip(key, True, config.get_config().context)
+        invoice.click('post')
+        self.assertEqual(invoice.state, 'posted')
+        self.assertEqual(invoice.tax_amount, Decimal(0))
 
         # Supplier REGE invoice with a base at cost of zero
         invoice = Invoice(party=customer, company=company, type='in')

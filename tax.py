@@ -18,18 +18,12 @@ LEGACY_REGE_TEMPLATES = ('iva_ex_rege_purchase', 'iva_ex_rege_sale')
 class TaxTemplate(metaclass=PoolMeta):
     __name__ = 'account.tax.template'
 
-    rege_cost_base_exclude = fields.Boolean(
-        'Exclude from REGE Cost Base by Default',
-        help=('Lines using this tax are excluded from the REGE cost base by '
-            'default. Review the value on each invoice line: costs for '
-            'VAT-bearing materials and third-party services must be included.'))
-
-    def _get_tax_value(self, tax=None):
-        values = super()._get_tax_value(tax)
-        if (not tax or tax.rege_cost_base_exclude
-                != self.rege_cost_base_exclude):
-            values['rege_cost_base_exclude'] = self.rege_cost_base_exclude
-        return values
+    @classmethod
+    def __register__(cls, module_name):
+        super().__register__(module_name)
+        table = cls.__table_handler__(module_name)
+        if table.column_exist('rege_cost_base_exclude'):
+            table.drop_column('rege_cost_base_exclude')
 
 
 class Tax(metaclass=PoolMeta):
@@ -37,15 +31,13 @@ class Tax(metaclass=PoolMeta):
 
     rege_legacy = fields.Boolean('Legacy REGE Exemption Tax', readonly=True,
         help='Historical REGE zero-rate tax retired on 30 September 2026.')
-    rege_cost_base_exclude = fields.Boolean(
-        'Exclude from REGE Cost Base by Default',
-        help=('Lines using this tax are excluded from the REGE cost base by '
-            'default. Review the value on each invoice line: costs for '
-            'VAT-bearing materials and third-party services must be included.'))
 
     @classmethod
     def __register__(cls, module_name):
         super().__register__(module_name)
+        handler = cls.__table_handler__(module_name)
+        if handler.column_exist('rege_cost_base_exclude'):
+            handler.drop_column('rege_cost_base_exclude')
         # Detach business taxes before the XML importer removes the obsolete
         # templates. Keep their rates, notices and historical tax-code links.
         pool = Pool()

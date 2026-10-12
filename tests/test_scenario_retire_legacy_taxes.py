@@ -66,7 +66,6 @@ class TestRetireLegacyTaxes(unittest.TestCase):
             tax = create_tax(Decimal(0))
             tax.template = template
             tax.legal_notice = 'Original legacy notice'
-            tax.rege_cost_base_exclude = True
             if suffix == 'sale':
                 tax.end_date = date(2026, 8, 31)
             tax.save()
@@ -134,6 +133,45 @@ class TestRetireLegacyTaxes(unittest.TestCase):
         self.assertEqual(historical.state, 'posted')
         move_id = historical.move.id
 
+        # Recreate the removed exclusion columns as they existed before upgrade.
+        # Cover drafts, posted lines, null/zero/nonzero costs and false/null flags.
+        expected_costs = {historical.lines[0].id: Decimal(0)}
+        fixtures = [(historical.lines[0].id, True, Decimal('99'))]
+        draft = Invoice(type='in', party=supplier,
+            invoice_date=date(2026, 9, 30), payment_term=payment_term)
+        for excluded, cost in [
+                (True, None), (True, Decimal(0)), (True, Decimal('12')),
+                (False, None), (False, Decimal(0)), (False, Decimal('12')),
+                (None, Decimal('7'))]:
+            line = draft.lines.new()
+            line.description = 'Cost migration'
+            line.account = accounts['expense']
+            line.quantity = 1
+            line.unit_price = Decimal('20')
+            line.cost_price = cost
+            draft.save()
+            line_id = draft.lines[-1].id
+            self.assertGreater(line_id, 0)
+            fixtures.append((line_id, excluded, cost))
+            expected_costs[line_id] = Decimal(0) if excluded else cost
+        with Transaction().start(cfg.database_name, 0,
+                context=cfg.context) as transaction:
+            cursor = transaction.connection.cursor()
+            for model in ('account.invoice.line', 'account.tax',
+                    'account.tax.template'):
+                BackendModel = cfg.pool.get(model)
+                BackendModel.__table_handler__().add_column(
+                    'rege_cost_base_exclude', 'BOOLEAN')
+            table = cfg.pool.get('account.invoice.line').__table__()
+            for line_id, excluded, cost in fixtures:
+                cursor.execute(*table.update(
+                        [table.rege_cost_base_exclude, table.cost_price],
+                        [excluded, cost], where=table.id == line_id))
+            transaction.commit()
+        move_values = [(line.id, line.debit, line.credit)
+            for line in historical.move.lines]
+        tax_values = [(tax.id, tax.base, tax.amount) for tax in historical.taxes]
+
         basic = Model.get('aeat.rege')(name='Basic group')
         basic.periods.new(type='normal')
         basic.save()
@@ -157,6 +195,15 @@ class TestRetireLegacyTaxes(unittest.TestCase):
             self.assertEqual(taxes[1].end_date, date(2026, 8, 31))
             self.assertFalse(Template.find([('id', 'in', [t.id for t in templates])]))
             with Transaction().start(cfg.database_name, 0, context=cfg.context):
+                for model in ('account.invoice.line', 'account.tax',
+                        'account.tax.template'):
+                    BackendModel = cfg.pool.get(model)
+                    self.assertNotIn('rege_cost_base_exclude', BackendModel._fields)
+                    self.assertFalse(BackendModel.__table_handler__().column_exist(
+                            'rege_cost_base_exclude'))
+                Line = cfg.pool.get('account.invoice.line')
+                for line_id, cost in expected_costs.items():
+                    self.assertEqual(Line(line_id).cost_price, cost)
                 self.assertFalse(cfg.pool.get('ir.model.data').search([
                             ('module', '=', 'aeat_rege'),
                             ('model', 'in', ['account.tax.template',
@@ -168,6 +215,10 @@ class TestRetireLegacyTaxes(unittest.TestCase):
             self.assertEqual(historical.state, 'posted')
             self.assertEqual(historical.total_amount, Decimal('8.60'))
             self.assertEqual(historical.move.id, move_id)
+            self.assertEqual([(line.id, line.debit, line.credit)
+                    for line in historical.move.lines], move_values)
+            self.assertEqual([(tax.id, tax.base, tax.amount)
+                    for tax in historical.taxes], tax_values)
             ordinary.reload()
             self.assertFalse(ordinary.rege_legacy)
             self.assertIsNone(ordinary.end_date)
