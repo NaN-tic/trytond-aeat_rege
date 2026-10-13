@@ -3,6 +3,21 @@
 this repository contains the full copyright notices and license terms. -->
 <tryton>
     <data grouped="1">
+        <record model="ir.message" id="msg_report_commercial_base">
+            <field name="text">Commercial Base</field>
+        </record>
+        <record model="ir.message" id="msg_report_mixed_base">
+            <field name="text">Base / Commercial</field>
+        </record>
+        <record model="ir.message" id="msg_report_cost_column">
+            <field name="text">REGE Cost Base</field>
+        </record>
+        <record model="ir.message" id="msg_report_operation">
+            <field name="text">Operation</field>
+        </record>
+        <record model="ir.message" id="msg_report_zero_cost_tax">
+            <field name="text">VAT %(rate)s%% · Zero REGE Cost</field>
+        </record>
         <record model="ir.message" id="msg_summary_bases">
             <field name="text">Commercial base: %(commercial)s&#10;REGE cost base: %(cost)s</field>
         </record>

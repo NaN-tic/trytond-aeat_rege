@@ -2,6 +2,26 @@
 msgid ""
 msgstr "Content-Type: text/plain; charset=utf-8\n"
 
+msgctxt "model:ir.message,text:msg_report_commercial_base"
+msgid "Commercial Base"
+msgstr "Base comercial"
+
+msgctxt "model:ir.message,text:msg_report_mixed_base"
+msgid "Base / Commercial"
+msgstr "Base / Comercial"
+
+msgctxt "model:ir.message,text:msg_report_cost_column"
+msgid "REGE Cost Base"
+msgstr "Base a coste REGE"
+
+msgctxt "model:ir.message,text:msg_report_operation"
+msgid "Operation"
+msgstr "Operación"
+
+msgctxt "model:ir.message,text:msg_report_zero_cost_tax"
+msgid "VAT %(rate)s%% · Zero REGE Cost"
+msgstr "IVA %(rate)s%% · Coste REGE cero"
+
 msgctxt "field:account.invoice,rege_fiscal_summary:"
 msgid "REGE Fiscal Summary"
 msgstr "Resumen fiscal REGE"
