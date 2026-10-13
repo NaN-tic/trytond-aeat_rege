@@ -47,6 +47,11 @@ When account_reports is installed, this module extends Taxes by Invoice in
 HTML/PDF and Excel with commercial and cost bases, including zero-cost services.
 The optional report integration, labels and tests belong entirely to aeat_rege;
 account_reports retains its standard behavior when aeat_rege is not installed.
+Supplier fiscal rows are grouped into deductible and non-deductible VAT, using
+the base report's non-deductible heading. Partial deductions split commercial
+bases, fiscal bases and VAT between both groups, preserving rounding remainders.
+Zero-cost operations have a separate informational group. No accounting records
+are created by preparing either the HTML/PDF report or the spreadsheet.
 
 General VAT Unit Value optionally records a valuation under articles 78 and 79
 different from the commercial price; it does not change the amount payable.

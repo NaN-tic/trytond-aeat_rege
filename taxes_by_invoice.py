@@ -20,6 +20,7 @@ class TaxesByInvoice(metaclass=PoolMeta):
         InvoiceTax = pool.get('account.invoice.tax')
         Currency = pool.get('currency.currency')
         Period = pool.get('account.period')
+        Tax = pool.get('account.tax')
 
         domain = [('type', '=', 'line'), ('invoice.move', '!=', None),
             ('invoice.type', '=', 'out' if data['partner_type'] == 'customers' else 'in')]
@@ -66,12 +67,19 @@ class TaxesByInvoice(metaclass=PoolMeta):
                 del records[key]
         line_taxes = {id_: cls._rege_line_taxes(invoice)
             for id_, invoice in invoices.items()}
+        deductible_taxes = {id_: cls._rege_line_taxes(invoice, deductible=True)
+            for id_, invoice in invoices.items()}
+        fiscal_groups = {}
+        group_id = min([0] + [row.tax.raw.id or 0 for rows in records.values()
+                for row in rows if row.tax]) - 1
+        row_id = min([0] + [row.raw.id or 0 for rows in records.values()
+                for row in rows]) - 1
         details = {}
         for line in lines:
             if line.invoice.id not in invoices:
                 continue
             invoice = line.invoice
-            for value in line_taxes[invoice.id].get(line.id, {}).values():
+            for tax_key, value in line_taxes[invoice.id].get(line.id, {}).items():
                 tax = value.tax
                 if (tax.tax_kind != 'vat'
                         or (data.get('taxes') and tax.id not in data['taxes'])):
@@ -85,18 +93,77 @@ class TaxesByInvoice(metaclass=PoolMeta):
                         value.amount, invoice.company.currency)
                     cost_base = Currency.compute(invoice.currency,
                         value.base, invoice.company.currency)
-                fiscal_line = InvoiceTax(-line.id, invoice=invoice, tax=tax,
-                    account=value.account, base=base, amount=value.amount,
-                    currency=invoice.currency, company_base=company_base,
-                    company_amount=company_amount, company_base_cache=company_base,
-                    company_amount_cache=company_amount)
-                key = invoice.move.period if data['grouping'] == 'invoice' else tax
-                records.setdefault(key, []).append(DualRecord(fiscal_line))
-                details[(invoice.id, fiscal_line.id, tax.id)] = {
-                    'cost_base': cost_base,
-                    'description': line.description or (
-                        line.product.rec_name if line.product else ''),
-                    }
+                rate = (line.taxes_deductible_rate if invoice.type == 'in'
+                    and line.taxes_deductible_rate is not None else Decimal(1))
+                parts = []
+                if not value.base and not value.amount and tax.rate:
+                    parts.append(('zero', base, value.amount,
+                            company_base, company_amount, cost_base))
+                elif rate == 0 or rate == 1:
+                    parts.append(('deductible' if rate else 'non_deductible',
+                            base, value.amount, company_base, company_amount, cost_base))
+                else:
+                    deducted = deductible_taxes[invoice.id].get(line.id, {}).get(tax_key)
+                    deducted_amount = deducted.amount if deducted else Decimal(0)
+                    deducted_cost = deducted.base if deducted else Decimal(0)
+                    deducted_base = invoice.currency.round(base * rate)
+                    with Transaction().set_context(date=invoice.currency_date):
+                        deducted_company_base = Currency.compute(invoice.currency,
+                            deducted_base, invoice.company.currency)
+                        deducted_company_amount = Currency.compute(invoice.currency,
+                            deducted_amount, invoice.company.currency)
+                        deducted_company_cost = Currency.compute(invoice.currency,
+                            deducted_cost, invoice.company.currency)
+                    parts.append(('deductible', deducted_base, deducted_amount,
+                            deducted_company_base, deducted_company_amount,
+                            deducted_company_cost))
+                    # Use the remainder so rounding cannot duplicate or lose
+                    # commercial bases, fiscal bases or VAT between groups.
+                    parts.append(('non_deductible', base - deducted_base,
+                            value.amount - deducted_amount,
+                            company_base - deducted_company_base,
+                            company_amount - deducted_company_amount,
+                            cost_base - deducted_company_cost))
+                for kind, part_base, amount, c_base, c_amount, c_cost in parts:
+                    report_tax = tax
+                    if kind != 'deductible':
+                        group_key = (kind, tax.rate, invoice.company.id,
+                            tax.id if tax.type != 'percentage' else None)
+                        if group_key not in fiscal_groups:
+                            percentage = (format((tax.rate * 100).normalize(), 'f')
+                                if tax.rate is not None else None)
+                            if kind == 'zero':
+                                label = gettext('aeat_rege.msg_report_zero_cost_tax',
+                                    rate=percentage)
+                            else:
+                                label = gettext('account_reports.msg_not_deductible_tax')
+                                if percentage is not None:
+                                    label += ' (%s%%)' % percentage
+                            existing = next((key for key in records
+                                    if isinstance(key, Tax) and (key.id or -1) < 0
+                                    and key.name == label and key.rate == tax.rate
+                                    and key.company == invoice.company), None)
+                            if existing is not None:
+                                fiscal_groups[group_key] = existing
+                            else:
+                                fiscal_groups[group_key] = Tax(group_id, name=label,
+                                    rate=tax.rate, type=tax.type, company=invoice.company)
+                                group_id -= 1
+                        report_tax = fiscal_groups[group_key]
+                    fiscal_line = InvoiceTax(row_id, invoice=invoice, tax=report_tax,
+                        account=value.account, base=part_base, amount=amount,
+                        currency=invoice.currency, company_base=c_base,
+                        company_amount=c_amount, company_base_cache=c_base,
+                        company_amount_cache=c_amount)
+                    row_id -= 1
+                    key = (invoice.move.period
+                        if data['grouping'] == 'invoice' else report_tax)
+                    records.setdefault(key, []).append(DualRecord(fiscal_line))
+                    details[(invoice.id, fiscal_line.id, report_tax.id)] = {
+                        'cost_base': c_cost, 'deduction_kind': kind,
+                        'description': line.description or (
+                            line.product.rec_name if line.product else ''),
+                        }
 
         totals = dict.fromkeys(
             ['total_untaxed', 'total_tax', 'total', 'cost_base'], Decimal(0))
@@ -125,9 +192,9 @@ class TaxesByInvoice(metaclass=PoolMeta):
         return records, parameters
 
     @classmethod
-    def _rege_line_taxes(cls, invoice):
+    def _rege_line_taxes(cls, invoice, deductible=False):
         """Allocate fiscal taxes using the invoice's rounding policy."""
-        with Transaction().set_context(_deductible_rate=1):
+        with Transaction().set_context(_deductible_rate=None if deductible else 1):
             invoice_taxes = invoice._get_rege_taxes()
             line_taxes = {line.id: line._get_taxes()
                 for line in invoice.lines if line.type == 'line'}
@@ -154,8 +221,7 @@ class TaxesByInvoice(metaclass=PoolMeta):
             return ' --- '
         tax = line.tax.raw
         detail = cls._rege_detail(line, details)
-        if (detail and not detail['cost_base'] and not line.raw.company_amount
-                and tax.type == 'percentage' and tax.rate):
+        if detail.get('deduction_kind') == 'zero':
             return gettext('aeat_rege.msg_report_zero_cost_tax',
                 rate=format((tax.rate * 100).normalize(), 'f'))
         return tax.name

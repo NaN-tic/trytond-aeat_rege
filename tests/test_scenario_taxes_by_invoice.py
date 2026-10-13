@@ -58,7 +58,8 @@ class TestTaxesByInvoice(unittest.TestCase):
         invoices = []
         for day, quantity, deduction in [
                 (1, 1, Decimal(0)), (2, -1, Decimal(0)),
-                (3, 1, Decimal('0.25'))]:
+                (3, 1, Decimal('0.25')), (5, 1, Decimal(1)),
+                (6, -1, Decimal('0.25'))]:
             invoice = Invoice(type='in', party=supplier, payment_term=payment_term,
                 invoice_date=date(2026, 2, day), accounting_date=date(2026, 2, day),
                 reference='REGE-%s' % day)
@@ -95,6 +96,21 @@ class TestTaxesByInvoice(unittest.TestCase):
         rounded.click('post')
         self.assertEqual(rounded.total_amount, Decimal('0.07'))
 
+        ordinary_supplier = Model.get('party.party')(name='Ordinary supplier')
+        ordinary_supplier.save()
+        ordinary = Invoice(type='in', party=ordinary_supplier,
+            payment_term=payment_term, reference='Ordinary non-deductible',
+            invoice_date=date(2026, 2, 7), accounting_date=date(2026, 2, 7))
+        line = ordinary.lines.new()
+        line.description = 'Ordinary expense'
+        line.account = accounts['expense']
+        line.quantity = 1
+        line.unit_price = Decimal('5')
+        line.taxes_deductible_rate = Decimal(0)
+        ordinary.save()
+        ordinary.click('post')
+        self.assertEqual(ordinary.total_amount, Decimal('6.05'))
+
         data = dict(company=company.id, fiscalyear=fiscalyear.id, periods=[],
             parties=[supplier.id], excluded_parties=[], totals_only=False,
             partner_type='suppliers', tax_type='all', taxes=[tax.id],
@@ -102,18 +118,35 @@ class TestTaxesByInvoice(unittest.TestCase):
         with Transaction().start(cfg.database_name, cfg.user, context=cfg.context):
             Report = cfg.pool.get('account_reports.taxes_by_invoice', type='report')
             Xlsx = cfg.pool.get('account_reports.taxes_by_invoice_xlsx', type='report')
-            for day, sign in [(1, 1), (2, -1), (3, 1)]:
+            for day, sign, rate in [(1, 1, Decimal(0)), (2, -1, Decimal(0)),
+                    (3, 1, Decimal('0.25')), (5, 1, Decimal(1)),
+                    (6, -1, Decimal('0.25'))]:
                 for grouping in ('invoice', 'base_tax_code'):
                     with self.subTest(day=day, grouping=grouping):
                         values = dict(data, grouping=grouping,
                             start_date=date(2026, 2, day), end_date=date(2026, 2, day))
                         records, parameters = Report.prepare(values)
                         rows = [row.raw for group in records.values() for row in group]
-                        self.assertEqual(len(rows), 2)
+                        expected = [(Decimal('8') * sign, Decimal(0))]
+                        costs = [Decimal(0)]
+                        for share in (rate, 1 - rate):
+                            if share:
+                                expected.append((Decimal('80') * sign * share,
+                                        Decimal('16.80') * sign * share))
+                                costs.append(Decimal('80') * sign * share)
+                        self.assertEqual(len(rows), len(expected))
                         self.assertEqual(sorted((r.company_base, r.company_amount)
-                                for r in rows), sorted([
-                                    (Decimal('80') * sign, Decimal('16.80') * sign),
-                                    (Decimal('8') * sign, Decimal(0))]))
+                                for r in rows), sorted(expected))
+                        if rate < 1:
+                            non_deductible, = [r for r in rows
+                                if r.tax.name == 'Not Deductible VAT (21%)']
+                            self.assertEqual(non_deductible.company_amount,
+                                Decimal('16.80') * sign * (1 - rate))
+                            if grouping == 'base_tax_code':
+                                group, = [g for g in records
+                                    if g.name == 'Not Deductible VAT (21%)']
+                                self.assertEqual(parameters['tax_totals'][group]['total'],
+                                    Decimal('96.80') * sign * (1 - rate))
                         self.assertEqual(parameters['totals'], {
                                 'total_untaxed': Decimal('88') * sign,
                                 'total_tax': Decimal('16.80') * sign,
@@ -121,23 +154,30 @@ class TestTaxesByInvoice(unittest.TestCase):
                                 'cost_base': Decimal('80') * sign})
                         details = parameters['rege_details'].values()
                         self.assertEqual(sorted(d['cost_base'] for d in details),
-                            sorted([Decimal(0), Decimal('80') * sign]))
+                            sorted(costs))
                         html = str(Report.body(None, {
                                     'records': records, 'parameters': parameters,
                                     'output_format': 'pdf'}, []))
                         self.assertIn('Group management', html)
                         self.assertIn('REGE Cost Base', html)
                         document = etree.HTML(html)
+                        if grouping == 'base_tax_code' and rate < 1:
+                            self.assertTrue(document.xpath(
+                                '//td[@colspan="13" and text()="Not Deductible VAT (21%)"]'))
                         for row in document.xpath('//tr[td and not(td/@colspan)]'):
                             self.assertEqual(len(row.findall('td')), 13)
                         workbook = load_workbook(BytesIO(
                                 Xlsx.get_content([], values)), data_only=True)
                         rows = list(workbook.active.values)
+                        if grouping == 'base_tax_code' and rate < 1:
+                            self.assertTrue(any(row[0] == 'Not Deductible VAT (21%)'
+                                for row in rows))
                         management, = [row for row in rows
                             if len(row) > 12 and row[12] == 'Group management']
                         self.assertEqual(management[6], 8 * sign)
                         self.assertEqual(management[8], 0)
                         self.assertEqual(management[11], 0)
+                        self.assertEqual(management[7], 'VAT 21% · Zero REGE Cost')
                         summary_parameters = dict(parameters, totals_only=True)
                         html = str(Report.body(None, {
                                     'records': records,
@@ -153,6 +193,13 @@ class TestTaxesByInvoice(unittest.TestCase):
             self.assertEqual(parameters['totals']['total'], Decimal('104.80'))
             records, _ = Report.prepare(dict(values, excluded_parties=[supplier.id]))
             self.assertFalse(records)
+            mixed, _ = Report.prepare(dict(data, parties=[],
+                    grouping='base_tax_code', start_date=date(2026, 2, 1),
+                    end_date=date(2026, 2, 7)))
+            non_deductible_group, = [key for key in mixed
+                if key.name == 'Not Deductible VAT (21%)']
+            self.assertIn(ordinary.id,
+                [row.invoice.raw.id for row in mixed[non_deductible_group]])
             records, parameters = Report.prepare(dict(values,
                     tax_type='all', start_date=date(2026, 2, 4),
                     end_date=date(2026, 2, 4)))
