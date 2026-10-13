@@ -2,6 +2,46 @@
 msgid ""
 msgstr "Content-Type: text/plain; charset=utf-8\n"
 
+msgctxt "model:ir.message,text:msg_report_commercial_base"
+msgid "Commercial Base"
+msgstr "Base comercial"
+
+msgctxt "model:ir.message,text:msg_report_mixed_base"
+msgid "Base / Commercial"
+msgstr "Base / Comercial"
+
+msgctxt "model:ir.message,text:msg_report_cost_column"
+msgid "REGE Cost Base"
+msgstr "Base a coste REGE"
+
+msgctxt "model:ir.message,text:msg_report_operation"
+msgid "Operation"
+msgstr "Operación"
+
+msgctxt "model:ir.message,text:msg_report_zero_cost_tax"
+msgid "VAT %(rate)s%% · Zero REGE Cost"
+msgstr "IVA %(rate)s%% · Coste REGE cero"
+
+msgctxt "field:account.invoice,rege_fiscal_summary:"
+msgid "REGE Fiscal Summary"
+msgstr "Resumen fiscal REGE"
+
+msgctxt "model:ir.message,text:msg_summary_bases"
+msgid "Commercial base: %(commercial)s\nREGE cost base: %(cost)s"
+msgstr "Base comercial: %(commercial)s\nBase a coste REGE: %(cost)s"
+
+msgctxt "model:ir.message,text:msg_summary_tax"
+msgid "%(tax)s\nCost base: %(base)s\nVAT: %(amount)s"
+msgstr "%(tax)s\nBase a coste: %(base)s\nIVA: %(amount)s"
+
+msgctxt "model:ir.message,text:msg_summary_received"
+msgid "VAT incurred: %(supported)s\nDeductible VAT: %(deductible)s\nNon-deductible VAT (included in expense): %(non_deductible)s"
+msgstr "IVA soportado: %(supported)s\nIVA deducible: %(deductible)s\nIVA no deducible (incluido en el gasto): %(non_deductible)s"
+
+msgctxt "model:ir.message,text:msg_summary_total"
+msgid "Invoice total: %(total)s"
+msgstr "Total de la factura: %(total)s"
+
 msgctxt "field:account.invoice,cost_price_show:"
 msgid "Display Cost Price?"
 msgstr "¿Mostrar precio de coste?"
@@ -14,17 +54,17 @@ msgctxt "field:account.invoice.line,cost_price_show:"
 msgid "Display Cost Price?"
 msgstr "¿Mostrar precio de coste?"
 
-msgctxt "field:account.invoice.line,rege_cost_base_exclude:"
-msgid "Exclude from REGE Cost Base"
-msgstr "Excluir de la base a coste REGE"
+msgctxt "field:account.tax,rege_legacy:"
+msgid "Legacy REGE Exemption Tax"
+msgstr "Impuesto de exención REGE antiguo"
 
-msgctxt "field:account.tax,rege_cost_base_exclude:"
-msgid "Exclude from REGE Cost Base by Default"
-msgstr "Excluir por defecto de la base a coste REGE"
+msgctxt "help:account.tax,rege_legacy:"
+msgid "Historical REGE zero-rate tax retired on 30 September 2026."
+msgstr "Impuesto REGE histórico al tipo cero retirado el 30 de septiembre de 2026."
 
-msgctxt "field:account.tax.template,rege_cost_base_exclude:"
-msgid "Exclude from REGE Cost Base by Default"
-msgstr "Excluir por defecto de la base a coste REGE"
+msgctxt "model:ir.message,text:msg_retired_tax"
+msgid "The legacy REGE tax \"%(tax)s\" on invoice \"%(invoice)s\" expired on %(date)s. Select the VAT tax applicable to the operation and enter the REGE cost separately. Review product taxes and tax rules if this tax was selected automatically."
+msgstr "El impuesto REGE antiguo \"%(tax)s\" de la factura \"%(invoice)s\" caducó el %(date)s. Seleccione el impuesto de IVA aplicable a la operación e indique el coste REGE por separado. Revise los impuestos de los productos y las reglas de impuestos si se ha seleccionado automáticamente."
 
 msgctxt "field:account.invoice.tax,cost_price:"
 msgid "Cost Price"
@@ -42,10 +82,6 @@ msgctxt "model:ir.message,text:msg_invoice_in_rege_cost_base_zero"
 msgid "The following supplier REGE invoices have a base at cost of zero: %(invoices)s."
 msgstr "Las siguientes facturas de proveedor REGE tienen una base a coste cero: %(invoices)s."
 
-msgctxt "model:ir.message,text:msg_invoice_rege_cost_base_excluded"
-msgid "Review the lines excluded from the REGE cost base on the following invoices: %(invoices)s. Exclude only own work or margin; costs for materials and services provided by third parties must be included."
-msgstr "Revise las líneas excluidas de la base a coste REGE de las siguientes facturas: %(invoices)s. Excluya solo el trabajo propio o el margen; deben incluirse los costes de materiales y de servicios prestados por terceros."
-
 msgctxt "field:aeat.rege,active_member_count:"
 msgid "Active Members"
 msgstr "Miembros activos"
@@ -57,6 +93,18 @@ msgstr "Tipo actual"
 msgctxt "field:aeat.rege,is_active:"
 msgid "Active Today?"
 msgstr "¿Hoy activo?"
+
+msgctxt "field:aeat.rege,invoice_journal:"
+msgid "Invoice Journal"
+msgstr "Diario de facturación"
+
+msgctxt "field:aeat.rege,has_advanced_period:"
+msgid "Advanced Period"
+msgstr "Período avanzado"
+
+msgctxt "help:aeat.rege,invoice_journal:"
+msgid "Dedicated journal for advanced REGE customer invoices."
+msgstr "Diario específico para las facturas de cliente del REGE avanzado."
 
 msgctxt "field:aeat.rege,members:"
 msgid "Members"
@@ -123,18 +171,6 @@ msgstr ""
 "Disponible sólo si la “Compañía” y el “Tercero” comparten el mismo REGE de "
 "tipo \"Avanzado\"; se utiliza para cálculos de impuestos y tiene como valor "
 "predeterminado el precio de coste del producto."
-
-msgctxt "help:account.invoice.line,rege_cost_base_exclude:"
-msgid "Use this field only for own work or margin. Include costs for materials and services provided by third parties."
-msgstr "Utilice este campo solo para el trabajo propio o el margen. Incluya los costes de materiales y de servicios prestados por terceros."
-
-msgctxt "help:account.tax,rege_cost_base_exclude:"
-msgid "Lines using this tax are excluded from the REGE cost base by default. Review the value on each invoice line: costs for materials and third-party services must be included."
-msgstr "Las líneas con este impuesto se excluyen por defecto de la base a coste REGE. Revise el valor de cada línea de factura: deben incluirse los costes de materiales y de servicios de terceros."
-
-msgctxt "help:account.tax.template,rege_cost_base_exclude:"
-msgid "Lines using this tax are excluded from the REGE cost base by default. Review the value on each invoice line: costs for materials and third-party services must be included."
-msgstr "Las líneas con este impuesto se excluyen por defecto de la base a coste REGE. Revise el valor de cada línea de factura: deben incluirse los costes de materiales y de servicios de terceros."
 
 msgctxt "help:aeat.rege,active_member_count:"
 msgid "Total number of parties currently registered."
@@ -279,8 +315,8 @@ msgid "Advanced"
 msgstr "Avanzado"
 
 msgctxt "selection:aeat.rege,current_type:"
-msgid "Normal"
-msgstr "Normal"
+msgid "Basic"
+msgstr "Básico"
 
 msgctxt "selection:aeat.rege.period,state:"
 msgid "Closed"
@@ -299,8 +335,8 @@ msgid "Advanced"
 msgstr "Avanzado"
 
 msgctxt "selection:aeat.rege.period,type:"
-msgid "Normal"
-msgstr "Normal"
+msgid "Basic"
+msgstr "Básico"
 
 msgctxt "view:aeat.rege:"
 msgid "Members"

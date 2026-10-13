@@ -22,8 +22,6 @@ class Invoice(metaclass=PoolMeta):
             if not line or not line.cost_price_show:
                 continue
             cost_price = papyrus_line.cost_price
-            if cost_price is None:
-                cost_price = line.unit_price
             to_write.extend(([line], {'cost_price': cost_price}))
         if to_write:
             InvoiceLine.write(*to_write)
