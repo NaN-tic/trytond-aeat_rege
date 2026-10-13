@@ -21,13 +21,20 @@ class REGE(ModelView, ModelSQL):
         required=True)
     members = fields.One2Many('aeat.rege.member', 'rege', 'Members',
         help='History of party memberships.')
+    invoice_journal = fields.Many2One('account.journal', 'Invoice Journal',
+        domain=[('type', '=', 'revenue')],
+        states={'required': Bool(Eval('has_advanced_period'))},
+        help='Dedicated journal for advanced REGE customer invoices.')
+    has_advanced_period = fields.Function(fields.Boolean('Advanced Period'),
+        'on_change_with_has_advanced_period')
+
     active_member_count = fields.Function(
         fields.Integer('Active Members',
             help='Total number of parties currently registered.'),
         'get_active_member_count')
     current_type = fields.Function(
         fields.Selection([
-            ('normal', 'Normal'),
+            ('normal', 'Basic'),
             ('advanced', 'Advanced'),
             ], 'Current Type',
             help='Tax regime of the currently open period.',
@@ -36,6 +43,10 @@ class REGE(ModelView, ModelSQL):
     is_active = fields.Function(
         fields.Boolean('Active Today?'),
         'on_change_with_is_active')
+
+    @fields.depends('periods')
+    def on_change_with_has_advanced_period(self, name=None):
+        return any(p.type == 'advanced' for p in self.periods)
 
     @classmethod
     def __setup__(cls):
@@ -79,10 +90,11 @@ class REGEPeriod(ModelView, ModelSQL):
         help='REGE to which this period belongs.',
         required=True, ondelete='CASCADE')
     type = fields.Selection([
-        ('normal', 'Normal'),
+        ('normal', 'Basic'),
         ('advanced', 'Advanced'),
         ], 'Type', help='Tax regime applied during the period.',
         required=True)
+    type_string = type.translated('type')
     start_date = fields.Date('Starting Date',
         help='Start date of the period; leave empty for no lower limit.',
         domain=[If(
@@ -131,7 +143,7 @@ class REGEPeriod(ModelView, ModelSQL):
     def get_rec_name(self, name):
         start_date = str(self.start_date or INFINITY_CHAR).replace('-', '/')
         end_date = str(self.end_date or INFINITY_CHAR).replace('-', '/')
-        type = (self.type or '').capitalize()
+        type = self.type_string or ''
         return f'{start_date} - {end_date} ({type})'
 
     @fields.depends('start_date', 'end_date')

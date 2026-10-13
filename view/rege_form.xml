@@ -7,6 +7,9 @@
         <label name="current_type"/>
         <field name="current_type" xexpand="0"/>
     </group>
+    <newline/>
+    <label name="invoice_journal"/>
+    <field name="invoice_journal" colspan="3"/>
     <notebook>
         <page id="periods-info" string="Periods">
             <field name="periods" height="500"/>
