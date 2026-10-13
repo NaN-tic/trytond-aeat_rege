@@ -2,6 +2,26 @@
 msgid ""
 msgstr "Content-Type: text/plain; charset=utf-8\n"
 
+msgctxt "field:account.invoice,rege_fiscal_summary:"
+msgid "REGE Fiscal Summary"
+msgstr "Resum fiscal REGE"
+
+msgctxt "model:ir.message,text:msg_summary_bases"
+msgid "Commercial base: %(commercial)s\nREGE cost base: %(cost)s"
+msgstr "Base comercial: %(commercial)s\nBase a cost REGE: %(cost)s"
+
+msgctxt "model:ir.message,text:msg_summary_tax"
+msgid "%(tax)s\nCost base: %(base)s\nVAT: %(amount)s"
+msgstr "%(tax)s\nBase a cost: %(base)s\nIVA: %(amount)s"
+
+msgctxt "model:ir.message,text:msg_summary_received"
+msgid "VAT incurred: %(supported)s\nDeductible VAT: %(deductible)s\nNon-deductible VAT (included in expense): %(non_deductible)s"
+msgstr "IVA suportat: %(supported)s\nIVA deduïble: %(deductible)s\nIVA no deduïble (inclòs a la despesa): %(non_deductible)s"
+
+msgctxt "model:ir.message,text:msg_summary_total"
+msgid "Invoice total: %(total)s"
+msgstr "Total de la factura: %(total)s"
+
 msgctxt "field:account.invoice,cost_price_show:"
 msgid "Display Cost Price?"
 msgstr "Mostrar el preu de cost?"

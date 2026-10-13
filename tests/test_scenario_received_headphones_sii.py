@@ -85,6 +85,9 @@ class TestReceivedHeadphonesSII(unittest.TestCase):
                 values['lines'] = [dict(partial_line, id=-1, type='line')]
                 changes = Invoice._proxy.on_change_lines(values, cfg.context)
                 self.assertEqual(changes['total_amount'], Decimal(0))
+                summary = Invoice._proxy.on_change_with_rege_fiscal_summary(
+                    dict(values, total_amount=Decimal(0)), cfg.context)
+                self.assertIn('REGE cost base', summary)
 
         # The invoice type comes from the parent, even when invoice_type is
         # absent on the line. A zero deductible rate must not become 100%.
@@ -115,10 +118,12 @@ class TestReceivedHeadphonesSII(unittest.TestCase):
             with self.assertRaises(RequiredValidationError):
                 invoice.save()
             line.cost_price = cost
-            line.taxes_deductible_rate = Decimal(0)
+            line.taxes_deductible_rate = (Decimal(0)
+                if description == 'Headphones' else Decimal(1))
             self.assertEqual([t.id for t in line.taxes], [tax.id])
         invoice.save()
         self.assertEqual(invoice.sii_received_key, '06')
+        self.assertFalse(invoice.taxes)
         invoice.click('post')
         self.assertEqual(invoice.state, 'posted')
         self.assertEqual(invoice.tax_amount, Decimal(0))
@@ -133,6 +138,13 @@ class TestReceivedHeadphonesSII(unittest.TestCase):
 
         with Transaction().start(cfg.database_name, cfg.user, context=cfg.context):
             record = cfg.pool.get('account.invoice')(invoice.id)
+            summary = record.get_rege_fiscal_summary_data()
+            self.assertEqual(summary['commercial_base'], Decimal('94.56'))
+            self.assertEqual(summary['cost_base'], Decimal('85.96'))
+            self.assertEqual(summary['supported'], Decimal('18.05'))
+            self.assertEqual(summary['deductible'], Decimal(0))
+            self.assertEqual(summary['non_deductible'], Decimal('18.05'))
+            self.assertIn('18.05', record.rege_fiscal_summary)
             mapper = cfg.pool.get('aeat.sii.recieved.invoice.mapper')()
             request = mapper.build_submit_request(record)
             self.assertEqual(request['IDFactura']['NumSerieFacturaEmisor'], 'G0007-26')
@@ -149,3 +161,36 @@ class TestReceivedHeadphonesSII(unittest.TestCase):
             self.assertNotIn('E6', str(request))
             self.assertEqual(record.get_rege_general_base(), Decimal('94.56'))
             self.assertEqual(record.get_rege_received_cost_base(), Decimal('85.96'))
+
+        # Exempt bases remain visible, and manually entered rows are preserved.
+        exempt = create_tax(Decimal(0))
+        exempt.tax_kind = 'vat'
+        exempt.save()
+        draft = Invoice(type='in', party=supplier,
+            invoice_date=date(2026, 2, 28), payment_term=payment_term)
+        line = draft.lines.new()
+        line.description = 'Exempt operation'
+        line.account = accounts['expense']
+        line.quantity = 1
+        line.unit_price = Decimal('100')
+        line.cost_price = Decimal('80')
+        while line.taxes:
+            line.taxes.pop()
+        line.taxes.append(Tax(exempt.id))
+        draft.save()
+        self.assertEqual(len(draft.taxes), 1)
+        self.assertEqual(draft.taxes[0].base, Decimal('80'))
+        self.assertEqual(draft.taxes[0].amount, Decimal(0))
+        manual = draft.taxes.new()
+        manual.manual = True
+        manual.description = 'Manual zero row'
+        manual.account = accounts['tax']
+        manual.tax = Tax(tax.id)
+        manual.base = Decimal(0)
+        manual.amount = Decimal(0)
+        draft.save()
+        self.assertEqual(len(draft.taxes), 2)
+        draft.lines[0].cost_price = Decimal(0)
+        draft.save()
+        self.assertEqual(len(draft.taxes), 1)
+        self.assertTrue(draft.taxes[0].manual)

@@ -16,6 +16,88 @@ class Invoice(metaclass=PoolMeta):
     cost_price_show = fields.Function(
         fields.Boolean('Display Cost Price?'),
         'on_change_with_cost_price_show')
+    rege_fiscal_summary = fields.Function(fields.Text('REGE Fiscal Summary',
+            states={'invisible': ~Bool(Eval('cost_price_show'))}),
+        'on_change_with_rege_fiscal_summary')
+
+    def _get_rege_taxes(self):
+        """Compute automatic taxes before suppressing empty accounting rows."""
+        return super()._get_taxes()
+
+    @fields.depends('party', 'invoice_date', 'accounting_date',
+        methods=['_get_rege_taxes'])
+    def _get_taxes(self):
+        taxes = self._get_rege_taxes()
+        if self._get_rege(advanced=True):
+            taxes = {key: value for key, value in taxes.items()
+                if value.base or value.amount}
+        return taxes
+
+    def get_rege_fiscal_summary_data(self):
+        """VAT information independent of the deductible accounting tax rows."""
+        if not self._get_rege(advanced=True):
+            return
+        deductible_taxes = self._get_rege_taxes()
+        with Transaction().set_context(_deductible_rate=Decimal(1)):
+            full_taxes = self._get_rege_taxes()
+        vat = []
+        for key, value in full_taxes.items():
+            if getattr(value.tax, 'tax_kind', 'vat') != 'vat':
+                continue
+            deductible = deductible_taxes.get(key)
+            vat.append({
+                    'tax': value.tax, 'base': value.base,
+                    'amount': value.amount,
+                    'deductible': deductible.amount if deductible else Decimal(0),
+                    })
+        for tax in self.taxes or []:
+            if tax.manual and tax.tax and getattr(tax.tax, 'tax_kind', 'vat') == 'vat':
+                vat.append({'tax': tax.tax, 'base': tax.base,
+                        'amount': tax.amount, 'deductible': tax.amount})
+        supported = sum((v['amount'] for v in vat), Decimal(0))
+        deductible = sum((v['deductible'] for v in vat), Decimal(0))
+        commercial = sum(((getattr(line, 'unit_price', None) or Decimal(0))
+                * Decimal(str(getattr(line, 'quantity', None) or 0))
+                for line in self.lines or []
+                if getattr(line, 'type', None) == 'line'), Decimal(0))
+        return {
+            'commercial_base': self.currency.round(commercial),
+            'cost_base': self.get_rege_received_cost_base(),
+            'vat': vat, 'supported': supported, 'deductible': deductible,
+            'non_deductible': supported - deductible,
+            }
+
+    @fields.depends('lines', 'taxes', 'party', 'company', 'currency', 'type',
+        'invoice_date', 'accounting_date', 'total_amount',
+        methods=['_get_rege_taxes'])
+    def on_change_with_rege_fiscal_summary(self, name=None):
+        if not self.currency:
+            return ''
+        data = self.get_rege_fiscal_summary_data()
+        if data is None:
+            return ''
+        lang = Pool().get('ir.lang').get()
+        def money(value):
+            return lang.currency(value, self.currency)
+        rows = [gettext('aeat_rege.msg_summary_bases',
+                commercial=money(data['commercial_base']),
+                cost=money(data['cost_base']))]
+        for value in data['vat']:
+            tax = value['tax']
+            label = tax.rec_name
+            if tax.type == 'percentage':
+                label += ' (%s%%)' % lang.format_number(tax.rate * 100, digits=2)
+            rows.append(gettext('aeat_rege.msg_summary_tax',
+                    tax=label, base=money(value['base']),
+                    amount=money(value['amount'])))
+        if self.type == 'in':
+            rows.append(gettext('aeat_rege.msg_summary_received',
+                    supported=money(data['supported']),
+                    deductible=money(data['deductible']),
+                    non_deductible=money(data['non_deductible'])))
+        rows.append(gettext('aeat_rege.msg_summary_total',
+                total=money(self.total_amount or Decimal(0))))
+        return '\n'.join(rows)
 
     @fields.depends('company', 'party', 'invoice_date', 'accounting_date')
     def on_change_with_cost_price_show(self, name=None):
@@ -177,12 +259,12 @@ class Invoice(metaclass=PoolMeta):
 
     def get_rege_received_cost_base(self):
         cost = Decimal(0)
-        for line in self.lines:
-            if line.type != 'line':
+        for line in self.lines or []:
+            if getattr(line, 'type', None) != 'line':
                 continue
-            price = line.cost_price
+            price = getattr(line, 'cost_price', None)
             cost += ((price or Decimal(0))
-                * Decimal(str(line.quantity or 0)))
+                * Decimal(str(getattr(line, 'quantity', None) or 0)))
         if self.currency:
             cost = self.currency.round(cost)
         return cost

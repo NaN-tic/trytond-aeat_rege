@@ -8,6 +8,26 @@ from trytond.transaction import Transaction
 
 class REGEMapperMixin:
 
+    def taxes(self, invoice):
+        taxes = super().taxes(invoice)
+        if not invoice._get_rege(advanced=True):
+            return taxes
+        # Zero-cost operations still have a general valuation for SII. Build
+        # transient fiscal rows for them without persisting empty tax records.
+        InvoiceTax = Pool().get('account.invoice.tax')
+        keys = {tax._key for tax in invoice.taxes if not tax.manual}
+        for key, value in invoice._get_rege_taxes().items():
+            if (key in keys or value.base or value.amount
+                    or value.tax.tax_kind != 'vat'):
+                continue
+            values = dict(value.values())
+            values.update(invoice=invoice, currency=invoice.currency,
+                manual=False, description=value.tax.description,
+                legal_notice=value.tax.legal_notice,
+                company_base=Decimal(0), company_amount=Decimal(0))
+            taxes.append(InvoiceTax(**values))
+        return taxes
+
     def get_tax_base(self, tax):
         invoice = tax.invoice
         if not invoice._get_rege(advanced=True) or tax.manual:

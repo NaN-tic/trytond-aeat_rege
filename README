@@ -34,6 +34,15 @@ deductible VAT, not the cost base. Enter zero explicitly for operations with no
 attributable fiscal cost. Imported/generated lines must also supply their
 fiscal costs; taxes do not supply a cost or an exclusion default.
 
+Advanced REGE invoices omit automatic accounting tax rows whose base and amount
+are both zero. Exempt or zero-rate rows with a nonzero base and manual rows are
+preserved. The read-only fiscal summary shows the commercial base, fiscal cost,
+VAT by tax and, for purchases, deductible and non-deductible VAT. Non-deductible
+VAT is already included in the expense and must not be added to the total again.
+SII reconstructs zero-cost fiscal details from invoice lines, independently of
+the persisted accounting tax rows. Existing draft rows disappear when taxes are
+recomputed; posted invoices and stored SII submissions are not rewritten.
+
 General VAT Unit Value optionally records a valuation under articles 78 and 79
 different from the commercial price; it does not change the amount payable.
 REGE Exemption Waived records the election for the individual operation and

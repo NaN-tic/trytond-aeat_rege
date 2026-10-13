@@ -3,6 +3,18 @@
 this repository contains the full copyright notices and license terms. -->
 <tryton>
     <data grouped="1">
+        <record model="ir.message" id="msg_summary_bases">
+            <field name="text">Commercial base: %(commercial)s&#10;REGE cost base: %(cost)s</field>
+        </record>
+        <record model="ir.message" id="msg_summary_tax">
+            <field name="text">%(tax)s&#10;Cost base: %(base)s&#10;VAT: %(amount)s</field>
+        </record>
+        <record model="ir.message" id="msg_summary_received">
+            <field name="text">VAT incurred: %(supported)s&#10;Deductible VAT: %(deductible)s&#10;Non-deductible VAT (included in expense): %(non_deductible)s</field>
+        </record>
+        <record model="ir.message" id="msg_summary_total">
+            <field name="text">Invoice total: %(total)s</field>
+        </record>
         <record model="ir.message" id="msg_retired_tax">
             <field name="text">The legacy REGE tax "%(tax)s" on invoice "%(invoice)s" expired on %(date)s. Select the VAT tax applicable to the operation and enter the REGE cost separately. Review product taxes and tax rules if this tax was selected automatically.</field>
         </record>
