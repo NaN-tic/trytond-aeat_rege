@@ -3,6 +3,66 @@
 this repository contains the full copyright notices and license terms. -->
 <tryton>
     <data grouped="1">
+        <record model="ir.message" id="msg_report_commercial_base">
+            <field name="text">Commercial Base</field>
+        </record>
+        <record model="ir.message" id="msg_report_mixed_base">
+            <field name="text">Base / Commercial</field>
+        </record>
+        <record model="ir.message" id="msg_report_cost_column">
+            <field name="text">REGE Cost Base</field>
+        </record>
+        <record model="ir.message" id="msg_report_operation">
+            <field name="text">Operation</field>
+        </record>
+        <record model="ir.message" id="msg_report_zero_cost_tax">
+            <field name="text">VAT %(rate)s%% · Zero REGE Cost</field>
+        </record>
+        <record model="ir.message" id="msg_summary_bases">
+            <field name="text">Commercial base: %(commercial)s&#10;REGE cost base: %(cost)s</field>
+        </record>
+        <record model="ir.message" id="msg_summary_tax">
+            <field name="text">%(tax)s&#10;Cost base: %(base)s&#10;VAT: %(amount)s</field>
+        </record>
+        <record model="ir.message" id="msg_summary_received">
+            <field name="text">VAT incurred: %(supported)s&#10;Deductible VAT: %(deductible)s&#10;Non-deductible VAT (included in expense): %(non_deductible)s</field>
+        </record>
+        <record model="ir.message" id="msg_summary_total">
+            <field name="text">Invoice total: %(total)s</field>
+        </record>
+        <record model="ir.message" id="msg_retired_tax">
+            <field name="text">The legacy REGE tax "%(tax)s" on invoice "%(invoice)s" expired on %(date)s. Select the VAT tax applicable to the operation and enter the REGE cost separately. Review product taxes and tax rules if this tax was selected automatically.</field>
+        </record>
+        <record model="ir.message" id="msg_report_general_base">
+            <field name="text">General VAT base (articles 78 and 79)</field>
+        </record>
+        <record model="ir.message" id="msg_report_cost_base">
+            <field name="text">REGE cost base (article 163 octies)</field>
+        </record>
+        <record model="ir.message" id="msg_report_waiver">
+            <field name="text">REGE exemption waived (163 sexies.Five)</field>
+        </record>
+        <record model="ir.message" id="msg_report_exemption">
+            <field name="text">VAT exempt operation according to article 20 of VAT Law 37/1992</field>
+        </record>
+        <record model="ir.message" id="msg_legal_notice_waiver">
+            <field name="text">Waiver of VAT exemption under article 163 sexies.Five of VAT Law 37/1992 for the operations marked as waived.</field>
+        </record>
+        <record model="ir.message" id="msg_waiver_tax">
+            <field name="text">Select the applicable VAT tax for the operations with a REGE exemption waiver on invoice "%(invoice)s".</field>
+        </record>
+        <record model="ir.message" id="msg_invoice_journal">
+            <field name="text">Invoice "%(invoice)s" must use the dedicated invoice journal of REGE "%(rege)s". Configure the journal on the group.</field>
+        </record>
+        <record model="ir.message" id="msg_invoice_sequence">
+            <field name="text">No dedicated sequence is configured for invoice "%(invoice)s", company "%(company)s", journal "%(journal)s" and date %(date)s. Configure the invoice or credit note sequence on the fiscal year.</field>
+        </record>
+        <record model="ir.message" id="msg_shared_sequence">
+            <field name="text">REGE sequence "%(sequence)s" is also used by ordinary invoices. Configure a dedicated sequence.</field>
+        </record>
+        <record model="ir.message" id="msg_missing_cost">
+            <field name="text">Enter the attributable REGE unit cost on every non-excluded line of invoice "%(invoice)s". Enter zero explicitly only when justified.</field>
+        </record>
         <record model="ir.message" id="msg_unique_rege_name">
             <field name="text">The REGE name must be unique.</field>
         </record>
@@ -23,9 +83,6 @@ this repository contains the full copyright notices and license terms. -->
         </record>
         <record model="ir.message" id="msg_invoice_in_rege_cost_base_zero">
             <field name="text">The following supplier REGE invoices have a base at cost of zero: %(invoices)s.</field>
-        </record>
-        <record model="ir.message" id="msg_invoice_rege_cost_base_excluded">
-            <field name="text">Review the lines excluded from the REGE cost base on the following invoices: %(invoices)s. Exclude only own work or margin; costs for materials and services provided by third parties must be included.</field>
         </record>
     </data>
 </tryton>

@@ -3,6 +3,123 @@ aeat_rege
 
 The aeat_rege module of the Tryton application platform.
 
+Regime levels are named Basic and Advanced. The stored key for Basic remains
+``normal`` for compatibility with existing periods and integrations.
+
+Advanced REGE invoicing
+-----------------------
+
+Configure a dedicated revenue journal on each group with advanced periods.
+For every participating company and fiscal year, configure customer invoice
+and customer credit note sequences in Journal Sequences. Do not reuse the
+ordinary invoice sequences. Missing configuration blocks validation/numbering.
+Existing groups need their journal configured after upgrading the module.
+
+Membership and regime periods are evaluated using the invoice date, falling
+back to the accounting date and then today. Membership ending dates are
+inclusive fiscal dates: for an exclusion effective during May, set April 30
+as the last REGE date. Eligibility, elections and their statutory deadlines
+must be checked before entering the fiscal dates.
+
+Enter the attributable VAT-bearing unit cost explicitly on each advanced
+intragroup invoice line, including supplier invoices. A missing cost blocks
+saving even in draft; a justified explicit zero is allowed. Product inventory cost and the
+commercial price are not automatic substitutes for fiscal cost. Allocate
+investment goods within their statutory regularization periods before entering
+the cost. Keep supporting allocation calculations with the invoice documents.
+
+The cost determines VAT and tax bases in accounting. The commercial price
+continues to determine revenue/payables. Supplier deductibility affects only
+deductible VAT, not the cost base. Enter zero explicitly for operations with no
+attributable fiscal cost. Imported/generated lines must also supply their
+fiscal costs; taxes do not supply a cost or an exclusion default.
+
+Advanced REGE invoices omit automatic accounting tax rows whose base and amount
+are both zero. Exempt or zero-rate rows with a nonzero base and manual rows are
+preserved. The read-only fiscal summary shows the commercial base, fiscal cost,
+VAT by tax and, for purchases, deductible and non-deductible VAT. Non-deductible
+VAT is already included in the expense and must not be added to the total again.
+SII reconstructs zero-cost fiscal details from invoice lines, independently of
+the persisted accounting tax rows. Existing draft rows disappear when taxes are
+recomputed; posted invoices and stored SII submissions are not rewritten.
+
+When account_reports is installed, this module extends Taxes by Invoice in
+HTML/PDF and Excel with commercial and cost bases, including zero-cost services.
+The optional report integration, labels and tests belong entirely to aeat_rege;
+account_reports retains its standard behavior when aeat_rege is not installed.
+Supplier fiscal rows are grouped into deductible and non-deductible VAT, using
+the base report's non-deductible heading. Partial deductions split commercial
+bases, fiscal bases and VAT between both groups, preserving rounding remainders.
+Zero-cost operations have a separate informational group. No accounting records
+are created by preparing either the HTML/PDF report or the spreadsheet.
+
+General VAT Unit Value optionally records a valuation under articles 78 and 79
+different from the commercial price; it does not change the amount payable.
+REGE Exemption Waived records the election for the individual operation and
+requires selection of the applicable VAT tax. It does not choose a tax rate.
+The standard account_invoice ODT report and the standard html_report invoice
+display both bases, the REGE notice and the applicable notices per operation.
+Exemption notices come from the configured taxes and coexist with REGE; they
+are not inferred from a zero cost or zero VAT amount. Waiver notices apply
+only to the explicitly marked lines. Configure the exemption legal notice on
+the tax, including the relevant article. With SII, E1 provides an article 20
+fallback when the tax has no more specific notice.
+
+The cediv and imi layouts reuse the HTML summary supplied by aeat_rege. Custom ODT
+templates and HTML layouts overriding the standard footer must integrate
+invoice.get_rege_report_data() or REGEReportMixin.show_rege_summary(record).
+The data API returns bases (label/amount pairs), legal_notice and line_notices
+(description/notice pairs). This lets custom layouts preserve their design.
+No change to the invoice comment or persisted tax amounts is made by printing.
+
+SII uses the invoice's computed taxes and reports the cost base independently
+of the recipient's deduction percentage. The advanced regime uses key 06.
+In accordance with the AEAT SII common registration FAQ, BaseImponible contains
+the general valuation under articles 78 and 79, BaseImponibleACoste contains
+the REGE cost and the VAT amount is calculated on that cost.
+Reference: https://sede.agenciatributaria.gob.es/Sede/impuestos-tasas/iva/iva-libros-registro-iva-traves-aeat/preguntas-frecuentes/2-registro-cuestiones-comunes.html
+
+Upgrade notes
+-------------
+
+The former cost-base exclusion flag is removed from invoice lines, taxes and
+tax templates. During upgrade, all previously excluded lines receive an
+explicit cost of zero, including lines with a nonzero stored cost: the flag
+previously overrode that cost. Non-excluded lines keep their original costs.
+The obsolete columns and views are removed. This migration is idempotent and
+does not recalculate invoice amounts, accounting moves or submitted SII data.
+Review integrations that supplied the removed flag and send explicit costs.
+
+The legacy REGE exemption purchase/sale taxes expire on 2026-09-30 (inclusive).
+On module upgrade, taxes linked to the former REGE templates are marked as
+legacy, detached from their templates and given that end date. An earlier
+existing end date is preserved. The removed XML templates and their tax-code
+line templates are deleted by Tryton's module update. Existing business taxes,
+tax-code lines and invoice/move references remain available for historical use.
+This migration is idempotent and applies across companies.
+
+Validation and numbering reject legacy taxes after their end date, including
+taxes assigned by products/rules or manual invoice tax rows. Update those
+defaults to the VAT tax applicable to the operation. No new legacy taxes are
+created by chart installation. Copies without a link to the original templates
+must be reviewed separately; taxes are not identified by their translated name.
+
+For the headphones example, enter commercial prices 85.96 and 8.60, REGE costs
+85.96 and 0.00, the ordinary 21% purchase VAT on both lines and a deductible
+rate of 0 for the recipient. The result is 112.61 payable, 18.05 VAT incurred
+and zero deductible VAT. SII reports key 06, general base 94.56, cost base
+85.96 and VAT rate 21%; it does not report an E6 exemption or a zero-rate line.
+The upgrade does not amend posted invoices or resend SII records.
+
+Update aeat_rege and cediv, configure the group journals and fiscal-year
+sequences, then review draft invoices before posting. Costs previously filled
+with zero by cediv cannot be distinguished automatically from justified zeros;
+review them against their source documents. Previously posted invoices and
+SII submissions require reconciliation before any correction or resubmission.
+
+This module does not generate forms 039, 322 or 353, an analytical memorandum,
+investment allocation schedules or differentiated-sector pro-rata returns.
+
 Installing
 ----------
 
