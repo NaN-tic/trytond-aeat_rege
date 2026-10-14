@@ -1,6 +1,9 @@
 import unittest
 import datetime
 from decimal import Decimal
+from unittest.mock import patch
+
+from stdnum import get_cc_module
 from proteus import Model, Wizard
 from trytond.exceptions import UserError, UserWarning
 from trytond.transaction import Transaction
@@ -15,10 +18,19 @@ from trytond.modules.account_invoice.tests.tools import (
 class Test(unittest.TestCase):
 
     def setUp(self):
+        self.vies_patcher = patch.object(
+            get_cc_module('eu', 'vat'), 'check_vies',
+            return_value={
+                'valid': True,
+                'name': 'Test Party',
+                'address': 'Test Address',
+                })
+        self.vies_patcher.start()
         drop_db()
         super().setUp()
 
     def tearDown(self):
+        self.vies_patcher.stop()
         drop_db()
         super().tearDown()
 
