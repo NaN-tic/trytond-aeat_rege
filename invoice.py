@@ -186,13 +186,14 @@ class Invoice(metaclass=PoolMeta):
                     invoice=self.rec_name, company=self.company.rec_name,
                     journal=self.journal.rec_name, date=str(date)))
         fields_ = ['out_invoice_sequence', 'out_credit_note_sequence']
-        shared = Sequence.search([
+        shared = bool(Sequence.search([
                 ('journal', '!=', self.journal.id),
                 ['OR', *[(field, '=', sequence.id) for field in fields_]]],
-            limit=1)
+            limit=1))
         StandardSequence = pool.get('account.fiscalyear.invoice_sequence')
-        shared += StandardSequence.search([
-                'OR', *[(field, '=', sequence.id) for field in fields_]], limit=1)
+        shared |= bool(StandardSequence.search([
+                'OR', *[(field, '=', sequence.id) for field in fields_]],
+            limit=1))
         if shared:
             raise UserError(gettext('aeat_rege.msg_shared_sequence',
                     sequence=sequence.rec_name))

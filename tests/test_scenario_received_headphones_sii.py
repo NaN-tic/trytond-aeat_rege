@@ -1,7 +1,9 @@
 import unittest
 from datetime import date
 from decimal import Decimal
+from unittest.mock import patch
 
+from stdnum import get_cc_module
 from proteus import Model
 from trytond.model.exceptions import RequiredValidationError
 from trytond.modules.account.tests.tools import (
@@ -16,10 +18,19 @@ from trytond.transaction import Transaction
 class TestReceivedHeadphonesSII(unittest.TestCase):
 
     def setUp(self):
+        self.vies_patcher = patch.object(
+            get_cc_module('eu', 'vat'), 'check_vies',
+            return_value={
+                'valid': True,
+                'name': 'Test Party',
+                'address': 'Test Address',
+                })
+        self.vies_patcher.start()
         drop_db()
         super().setUp()
 
     def tearDown(self):
+        self.vies_patcher.stop()
         drop_db()
         super().tearDown()
 
