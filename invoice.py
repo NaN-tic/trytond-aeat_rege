@@ -4,7 +4,7 @@ from trytond.i18n import gettext
 from trytond.exceptions import UserError, UserWarning
 from trytond.model import fields
 from trytond.pool import Pool, PoolMeta
-from trytond.pyson import Bool, Eval
+from trytond.pyson import Bool, Eval, If
 from trytond.transaction import Transaction
 
 from .tax import LEGACY_REGE_END_DATE
@@ -381,6 +381,13 @@ class SIIInvoice(metaclass=PoolMeta):
 class InvoiceLine(metaclass=PoolMeta):
     __name__ = 'account.invoice.line'
 
+    # Existing lines may retain their standalone visibility when attached to
+    # an unsaved invoice. Prefer the current parent invoice's REGE status.
+    _cost_price_visible = (Eval('type') == 'line') & If(
+        Bool(Eval('_parent_invoice', {})),
+        Bool(Eval('_parent_invoice', {}).get('cost_price_show', False)),
+        Bool(Eval('cost_price_show')))
+
     cost_price = fields.Numeric('Cost Price', digits='currency',
         help=('Available only if the "Company" and "Party" '
             'share the same REGE of type "Advanced"; used for '
@@ -388,8 +395,8 @@ class InvoiceLine(metaclass=PoolMeta):
             'without deductible Spanish VAT. Enter zero explicitly when '
             'justified; a missing cost is not zero.'),
         states={
-            'required': Bool(Eval('cost_price_show')),
-            'invisible': ~Bool(Eval('cost_price_show')),
+            'required': _cost_price_visible,
+            'invisible': ~_cost_price_visible,
             'readonly': Eval('invoice_state') != 'draft',
             })
     cost_price_show = fields.Function(
@@ -400,14 +407,14 @@ class InvoiceLine(metaclass=PoolMeta):
         help=('Valuation under articles 78 and 79, for reporting and deduction '
             'ratios. Leave empty to use the commercial unit price.'),
         states={
-            'invisible': ~Bool(Eval('cost_price_show')),
+            'invisible': ~_cost_price_visible,
             'readonly': Eval('invoice_state') != 'draft',
             })
     rege_exemption_waived = fields.Boolean('REGE Exemption Waived',
         help=('Waiver under article 163 sexies.Five for this operation. '
             'Select the applicable VAT tax on the line.'),
         states={
-            'invisible': ~Bool(Eval('cost_price_show')),
+            'invisible': ~_cost_price_visible,
             'readonly': Eval('invoice_state') != 'draft',
             })
 
