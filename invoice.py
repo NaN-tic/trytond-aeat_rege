@@ -282,8 +282,10 @@ class Invoice(metaclass=PoolMeta):
         if not self._get_rege(advanced=True):
             return ''
         notices = [gettext('aeat_rege.msg_legal_notice_tax')]
-        if any(line.rege_exemption_waived for line in self.lines
-                if line.type == 'line'):
+        # On-change calls may include new lines with only partial field values.
+        if any(getattr(line, 'rege_exemption_waived', False)
+                for line in self.lines
+                if getattr(line, 'type', None) == 'line'):
             notices.append(gettext('aeat_rege.msg_legal_notice_waiver'))
         return '\n'.join(notices)
 
