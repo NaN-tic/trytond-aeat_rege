@@ -10,10 +10,10 @@ class TaxesByInvoice(metaclass=PoolMeta):
     __name__ = 'account_reports.taxes_by_invoice'
 
     @classmethod
-    def prepare(cls, data):
+    def prepare(cls, data, checker=None):
         from trytond.modules.html_report.engine import DualRecord
 
-        records, parameters = super().prepare(data)
+        records, parameters = super().prepare(data, checker)
         pool = Pool()
         Invoice = pool.get('account.invoice')
         InvoiceLine = pool.get('account.invoice.line')
@@ -227,55 +227,84 @@ class TaxesByInvoice(metaclass=PoolMeta):
         return tax.name
 
     @classmethod
-    def show_detail(cls, data):
-        from dominate.tags import table
-        from dominate.util import raw
-        from lxml import etree
+    def _build_pdf(cls, records, parameters, margin, checker):
+        from trytond.modules.account_reports.common import AccountReportsPDF
         from trytond.modules.html_report.engine import render
+        from trytond.modules.xgettext import _
 
-        nodes = super().show_detail(data)
-        parameters = data['parameters']
         details = parameters.get('rege_details')
         if not details:
-            return nodes
-        groups = iter(data['records'].items())
-        result = []
-        for node in nodes:
-            if not isinstance(node, table):
-                result.append(node)
-                continue
-            key, lines = next(groups)
+            return super()._build_pdf(records, parameters, margin, checker)
+        p = parameters
+        title = _('Taxes By Invoice and Period') if p['grouping'] else _('Taxes By Invoice')
+        periods = (_('Periods: %(periods)s') % p if p['periods'] else _('All Periods'))
+        filters = ['%s: %s' % (p['company_vat_label'], p['company_vat']),
+            _('Fiscal Year: %(fiscal_year)s %(periods)s') % {
+                'fiscal_year': p['fiscal_year'], 'periods': periods}]
+        if p['start_date']:
+            filters += [_('Initial posting date: %(start_date)s') % p,
+                _('Final posting date: %(end_date)s') % p]
+        filters += [_('Parties: %(parties)s') % p if p['parties'] else _('All Parties'),
+            _('Cancelled invoices are shown in grey. Invoices '
+                'without a cancelled move or a cancelled move not '
+                'related to an invoice are not added to the total.')]
+        pdf = AccountReportsPDF(title, p['company'], filters,
+            [_('Move Date'), _('Account'), '', _('NIF'), _('Invoice'), _('Date'),
+                cls._base_label(p), '', _('Tax'), _('Base + Tax'), _('Total Invoice'),
+                gettext('aeat_rege.msg_report_cost_column'),
+                gettext('aeat_rege.msg_report_operation')],
+            [7, 6, 14, 8, 9, 7, 9, 12, 8, 9, 10, 9, 14],
+            ['L'] * 6 + ['R', 'L', 'R', 'R', 'R', 'R', 'L'], margin, checker)
+        pdf.add_page()
+        total_widths = [sum(pdf.widths[:6])] + pdf.widths[6:]
+        for index, (key, lines) in enumerate(records.items()):
+            if p['grouping'] and index:
+                pdf.add_page()
+            pdf.row([key.name if hasattr(key, 'name') else key.rec_name],
+                widths=[pdf.epw], aligns=['L'], bold=True, fill=True)
             digits = key.company.currency.digits
-            element = etree.HTML(str(node)).find('body/table')
-            header = element.find('thead/tr')
-            header[6].text = cls._base_label(parameters)
-            etree.SubElement(header, 'th').text = gettext('aeat_rege.msg_report_cost_column')
-            etree.SubElement(header, 'th').text = gettext('aeat_rege.msg_report_operation')
-            rows = element.findall('tr')
-            rows[0][0].set('colspan', '13')
-            index = 1
-            if not parameters['totals_only']:
+            if not p['totals_only']:
+                previous_invoice = None
                 for line in lines:
-                    row = rows[index]
-                    index += 1
-                    row[7].text = cls._tax_label(line, details)
-                    while len(row) < 11:
-                        etree.SubElement(row, 'td')
+                    invoice = line.invoice.raw
+                    if invoice.id != previous_invoice:
+                        tax_identifier = (invoice.party_tax_identifier
+                            or invoice.party.tax_identifier)
+                        values = [render(invoice.move.date), line.account.raw.code,
+                            invoice.party.rec_name,
+                            tax_identifier.code if tax_identifier else '',
+                            ('*' if invoice.state == 'cancelled' else '') + (invoice.number or ''),
+                            render(invoice.invoice_date)]
+                        invoice_total = render(invoice.company_total_amount, digits=digits)
+                    else:
+                        values = [''] * 6
+                        invoice_total = ''
                     detail = cls._rege_detail(line, details)
-                    etree.SubElement(row, 'td', style='text-align: right;').text = (
-                        str(render(detail['cost_base'], digits=digits)) if detail else '')
-                    etree.SubElement(row, 'td').text = detail.get('description', '')
-            if parameters['tax_totals'].get(key):
-                etree.SubElement(rows[index], 'td').text = str(render(
-                    parameters['tax_totals'][key]['cost_base'], digits=digits))
-                etree.SubElement(rows[index], 'td')
-                index += 1
-            if index < len(rows):
-                etree.SubElement(rows[index], 'td').text = str(render(
-                    parameters['totals']['cost_base'], digits=digits))
-                etree.SubElement(rows[index], 'td')
-            result.append(raw(etree.tostring(element, encoding='unicode', method='html')))
-        return result
+                    values += [render(line.raw.company_base, digits=digits),
+                        cls._tax_label(line, details),
+                        render(line.raw.company_amount, digits=digits),
+                        render(line.raw.company_base + line.raw.company_amount, digits=digits),
+                        invoice_total,
+                        render(detail['cost_base'], digits=digits) if detail else '',
+                        detail.get('description', '')]
+                    pdf.row(values, fill=invoice.state == 'cancelled')
+                    previous_invoice = invoice.id
+            totals = p['tax_totals'].get(key)
+            if totals:
+                pdf.row([_('Total Period') if p['grouping'] else _('Total'),
+                    render(totals['total_untaxed'], digits=digits), '',
+                    render(totals['total_tax'], digits=digits),
+                    render(totals['total'], digits=digits), '',
+                    render(totals['cost_base'], digits=digits), ''],
+                    widths=total_widths, aligns=['R'] * 8, bold=True, bottom=True)
+            if p['grouping'] and index == len(records) - 1:
+                totals = p['totals']
+                pdf.row([_('Total'), render(totals['total_untaxed'], digits=digits), '',
+                    render(totals['total_tax'], digits=digits),
+                    render(totals['total'], digits=digits), '',
+                    render(totals['cost_base'], digits=digits), ''],
+                    widths=total_widths, aligns=['R'] * 8, bold=True, bottom=True)
+        return bytes(pdf.output())
 
 
 class TaxesByInvoiceXlsx(metaclass=PoolMeta):
