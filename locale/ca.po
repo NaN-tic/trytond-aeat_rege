@@ -54,6 +54,14 @@ msgctxt "field:account.invoice.line,cost_price_show:"
 msgid "Display Cost Price?"
 msgstr "Mostrar el preu de cost?"
 
+msgctxt "field:account.invoice.line,rege_exemption_waived:"
+msgid "REGE Exemption Waived"
+msgstr "Renúncia a l'exempció REGE"
+
+msgctxt "help:account.invoice.line,rege_exemption_waived:"
+msgid "Waiver under article 163 sexies.Five for this operation. Select the applicable VAT tax on the line."
+msgstr "Renúncia segons l'article 163 sexies.Cinc per a aquesta operació. Seleccioneu l'impost d'IVA aplicable a la línia."
+
 msgctxt "field:account.tax,rege_legacy:"
 msgid "Legacy REGE Exemption Tax"
 msgstr "Impost d'exempció REGE antic"
