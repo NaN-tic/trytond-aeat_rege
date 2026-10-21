@@ -54,6 +54,14 @@ msgctxt "field:account.invoice.line,cost_price_show:"
 msgid "Display Cost Price?"
 msgstr "¿Mostrar precio de coste?"
 
+msgctxt "field:account.invoice.line,rege_exemption_waived:"
+msgid "REGE Exemption Waived"
+msgstr "Renuncia a la exención REGE"
+
+msgctxt "help:account.invoice.line,rege_exemption_waived:"
+msgid "Waiver under article 163 sexies.Five for this operation. Select the applicable VAT tax on the line."
+msgstr "Renuncia según el artículo 163 sexies.Cinco para esta operación. Seleccione el impuesto de IVA aplicable en la línea."
+
 msgctxt "field:account.tax,rege_legacy:"
 msgid "Legacy REGE Exemption Tax"
 msgstr "Impuesto de exención REGE antiguo"
