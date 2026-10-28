@@ -10,10 +10,10 @@ class TaxesByInvoice(metaclass=PoolMeta):
     __name__ = 'account_reports.taxes_by_invoice'
 
     @classmethod
-    def prepare(cls, data):
+    def prepare(cls, data, checker=None):
         from trytond.modules.html_report.engine import DualRecord
 
-        records, parameters = super().prepare(data)
+        records, parameters = super().prepare(data, checker)
         pool = Pool()
         Invoice = pool.get('account.invoice')
         InvoiceLine = pool.get('account.invoice.line')
@@ -227,55 +227,39 @@ class TaxesByInvoice(metaclass=PoolMeta):
         return tax.name
 
     @classmethod
-    def show_detail(cls, data):
-        from dominate.tags import table
-        from dominate.util import raw
-        from lxml import etree
+    def _get_pdf_columns(cls, parameters):
+        columns, ratios, aligns = super()._get_pdf_columns(parameters)
+        if parameters.get('rege_details'):
+            columns[6] = cls._base_label(parameters)
+            columns.extend([gettext('aeat_rege.msg_report_cost_column'),
+                gettext('aeat_rege.msg_report_operation')])
+            ratios.extend([9, 14])
+            aligns.extend(['R', 'L'])
+        return columns, ratios, aligns
+
+    @classmethod
+    def _get_pdf_tax_values(cls, line, parameters, digits, invoice_total):
         from trytond.modules.html_report.engine import render
 
-        nodes = super().show_detail(data)
-        parameters = data['parameters']
+        values = super()._get_pdf_tax_values(
+            line, parameters, digits, invoice_total)
         details = parameters.get('rege_details')
-        if not details:
-            return nodes
-        groups = iter(data['records'].items())
-        result = []
-        for node in nodes:
-            if not isinstance(node, table):
-                result.append(node)
-                continue
-            key, lines = next(groups)
-            digits = key.company.currency.digits
-            element = etree.HTML(str(node)).find('body/table')
-            header = element.find('thead/tr')
-            header[6].text = cls._base_label(parameters)
-            etree.SubElement(header, 'th').text = gettext('aeat_rege.msg_report_cost_column')
-            etree.SubElement(header, 'th').text = gettext('aeat_rege.msg_report_operation')
-            rows = element.findall('tr')
-            rows[0][0].set('colspan', '13')
-            index = 1
-            if not parameters['totals_only']:
-                for line in lines:
-                    row = rows[index]
-                    index += 1
-                    row[7].text = cls._tax_label(line, details)
-                    while len(row) < 11:
-                        etree.SubElement(row, 'td')
-                    detail = cls._rege_detail(line, details)
-                    etree.SubElement(row, 'td', style='text-align: right;').text = (
-                        str(render(detail['cost_base'], digits=digits)) if detail else '')
-                    etree.SubElement(row, 'td').text = detail.get('description', '')
-            if parameters['tax_totals'].get(key):
-                etree.SubElement(rows[index], 'td').text = str(render(
-                    parameters['tax_totals'][key]['cost_base'], digits=digits))
-                etree.SubElement(rows[index], 'td')
-                index += 1
-            if index < len(rows):
-                etree.SubElement(rows[index], 'td').text = str(render(
-                    parameters['totals']['cost_base'], digits=digits))
-                etree.SubElement(rows[index], 'td')
-            result.append(raw(etree.tostring(element, encoding='unicode', method='html')))
-        return result
+        if details:
+            values[1] = cls._tax_label(line, details)
+            detail = cls._rege_detail(line, details)
+            values.extend([
+                render(detail['cost_base'], digits=digits) if detail else '',
+                detail.get('description', '')])
+        return values
+
+    @classmethod
+    def _get_pdf_total_values(cls, totals, parameters, digits, label):
+        from trytond.modules.html_report.engine import render
+
+        values = super()._get_pdf_total_values(totals, parameters, digits, label)
+        if parameters.get('rege_details'):
+            values.extend([render(totals['cost_base'], digits=digits), ''])
+        return values
 
 
 class TaxesByInvoiceXlsx(metaclass=PoolMeta):

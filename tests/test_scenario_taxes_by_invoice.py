@@ -3,8 +3,8 @@ from datetime import date
 from decimal import Decimal
 from io import BytesIO
 
-from lxml import etree
 from openpyxl import load_workbook
+from pypdf import PdfReader
 from proteus import Model
 from trytond.modules.account.tests.tools import (
     create_chart, create_fiscalyear, create_tax, get_accounts)
@@ -114,7 +114,7 @@ class TestTaxesByInvoice(unittest.TestCase):
         data = dict(company=company.id, fiscalyear=fiscalyear.id, periods=[],
             parties=[supplier.id], excluded_parties=[], totals_only=False,
             partner_type='suppliers', tax_type='all', taxes=[tax.id],
-            output_format='html')
+            output_format='pdf')
         with Transaction().start(cfg.database_name, cfg.user, context=cfg.context):
             Report = cfg.pool.get('account_reports.taxes_by_invoice', type='report')
             Xlsx = cfg.pool.get('account_reports.taxes_by_invoice_xlsx', type='report')
@@ -155,17 +155,22 @@ class TestTaxesByInvoice(unittest.TestCase):
                         details = parameters['rege_details'].values()
                         self.assertEqual(sorted(d['cost_base'] for d in details),
                             sorted(costs))
-                        html = str(Report.body(None, {
-                                    'records': records, 'parameters': parameters,
-                                    'output_format': 'pdf'}, []))
-                        self.assertIn('Group management', html)
-                        self.assertIn('REGE Cost Base', html)
-                        document = etree.HTML(html)
+                        extension, content, _, _ = Report.execute([], values)
+                        self.assertEqual(extension, 'pdf')
+                        document = PdfReader(BytesIO(content))
+                        text = ' '.join(' '.join(page.extract_text()
+                            for page in document.pages).split())
+                        self.assertIn('Group management', text)
+                        self.assertIn('REGE Cost', text)
+                        self.assertIn('VAT 21% ·', text)
+                        self.assertIn('Zero REGE Cost', text)
                         if grouping == 'base_tax_code' and rate < 1:
-                            self.assertTrue(document.xpath(
-                                '//td[@colspan="13" and text()="Not Deductible VAT (21%)"]'))
-                        for row in document.xpath('//tr[td and not(td/@colspan)]'):
-                            self.assertEqual(len(row.findall('td')), 13)
+                            self.assertIn('Not Deductible VAT (21%)', text)
+                        columns, ratios, aligns = Report._get_pdf_columns(parameters)
+                        self.assertEqual(len(columns), 13)
+                        self.assertEqual(len(ratios), 13)
+                        self.assertEqual(len(aligns), 13)
+                        self.assertEqual(columns[11], 'REGE Cost Base')
                         workbook = load_workbook(BytesIO(
                                 Xlsx.get_content([], values)), data_only=True)
                         rows = list(workbook.active.values)
@@ -178,13 +183,15 @@ class TestTaxesByInvoice(unittest.TestCase):
                         self.assertEqual(management[8], 0)
                         self.assertEqual(management[11], 0)
                         self.assertEqual(management[7], 'VAT 21% · Zero REGE Cost')
-                        summary_parameters = dict(parameters, totals_only=True)
-                        html = str(Report.body(None, {
-                                    'records': records,
-                                    'parameters': summary_parameters,
-                                    'output_format': 'pdf'}, []))
-                        self.assertNotIn('Group management', html)
-                        self.assertIn('REGE Cost Base', html)
+                        extension, content, _, _ = Report.execute([], dict(
+                            values, totals_only=True))
+                        self.assertEqual(extension, 'pdf')
+                        text = ' '.join(' '.join(page.extract_text()
+                            for page in PdfReader(BytesIO(content)).pages).split())
+                        self.assertNotIn('Group management', text)
+                        self.assertIn('REGE Cost', text)
+                        for totals in parameters['tax_totals'].values():
+                            self.assertIn(format(totals['cost_base'], '.2f'), text)
             values = dict(data, grouping='invoice', start_date=date(2026, 2, 1),
                 end_date=date(2026, 2, 2), tax_type='refunded')
             records, parameters = Report.prepare(values)
