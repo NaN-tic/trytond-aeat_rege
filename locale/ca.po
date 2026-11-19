@@ -46,6 +46,10 @@ msgctxt "field:account.invoice,cost_price_show:"
 msgid "Display Cost Price?"
 msgstr "Mostrar el preu de cost?"
 
+msgctxt "model:ir.message,text:msg_missing_cost"
+msgid "Enter the attributable REGE unit cost on every non-excluded line of invoice \"%(invoice)s\". Enter zero explicitly only when justified."
+msgstr "Indiqueu el cost unitari atribuïble al REGE a totes les línies no excloses de la factura \"%(invoice)s\". Indiqueu zero explícitament només quan estigui justificat."
+
 msgctxt "field:account.invoice.line,cost_price:"
 msgid "Cost Price"
 msgstr "Preu de cost"
